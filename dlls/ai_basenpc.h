@@ -2084,12 +2084,14 @@ public:
 
 	//TGB: lagcompensation affairs
 
-	CUtlLinkedList<LagRecord>*			m_LagTrack; //not a laughing track
-	//bool								m_bRestoringNPC;
-	bool								m_bFlaggedForLagCompensation;
+	// FIXMOD_CHANGE - Mehis
+	CUtlLinkedList<LagRecord>*			m_pLagTrack; //not a laughing track
 
-	LagRecord*							m_RestoreData;
-	LagRecord*							m_ChangeData;
+	//bool								m_bRestoringNPC;
+	bool								m_bFlaggedForLagCompensation; // Easier to read this way.
+
+	LagRecord*							m_pRestoreData;
+	LagRecord*							m_pChangeData;
 };
 
 

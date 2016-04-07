@@ -11195,8 +11195,8 @@ CAI_BaseNPC::CAI_BaseNPC(void)
 	g_AI_Manager.AddAI( this );
 //	lagcompensation->AddNpcData( GetRefEHandle() );
 
-	m_LagTrack = new CUtlLinkedList< LagRecord >();
-	//m_bFlaggedForLagCompensation = false;
+	// FIXMOD_CHANGE - Mehis
+	m_pLagTrack = new CUtlLinkedList< LagRecord >();
 
 	
 	if ( g_AI_Manager.NumAIs() == 1 )
@@ -11238,8 +11238,12 @@ CAI_BaseNPC::~CAI_BaseNPC(void)
 	delete m_pSenses;
 	delete m_pTacticalServices;
 
-	m_LagTrack->Purge();
-	delete m_LagTrack;
+	// FIXMOD_CHANGE - Mehis
+	m_pLagTrack->Purge();
+	delete m_pLagTrack;
+
+	delete m_pRestoreData;
+	delete m_pChangeData;
 }
 
 //-----------------------------------------------------------------------------

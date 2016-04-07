@@ -451,7 +451,7 @@ void CLagCompensationManager::FrameUpdatePostEntityThink()
 			continue;
 
 		//TGB: lagcomp in npc
-		CUtlLinkedList< LagRecord > *track = pNPC->m_LagTrack;
+		CUtlLinkedList< LagRecord > *track = pNPC->m_pLagTrack;
 
 		if (!track) continue; //tgb: bad news, this should never happen
 
@@ -988,7 +988,7 @@ void CLagCompensationManager::BacktrackEntity( CAI_BaseNPC *pEntity, float flTar
 	VPROF_BUDGET( "BacktrackEntity", "CLagCompensationManager" );
 
 	// get track history of this entity
-	CUtlLinkedList< LagRecord > *track = pEntity->m_LagTrack;
+	CUtlLinkedList< LagRecord > *track = pEntity->m_pLagTrack;
 
 	// check if we have at leat one entry
 	if (!track || track->Count() <= 0 )
@@ -1158,8 +1158,8 @@ void CLagCompensationManager::BacktrackEntity( CAI_BaseNPC *pEntity, float flTar
 	int flags = 0;
 
 	// FIXMOD_CHANGE - Mehis
-	LagRecord *restore = new LagRecord();//&pEntity->m_RestoreData;
-	LagRecord *change = new LagRecord();//&pEntity->m_ChangeData;
+	LagRecord *restore = new LagRecord();//&pEntity->m_pRestoreData;
+	LagRecord *change = new LagRecord();//&pEntity->m_pChangeData;
 
 
 	QAngle angdiff = pEntity->GetLocalAngles() - ang;
@@ -1307,11 +1307,14 @@ void CLagCompensationManager::BacktrackEntity( CAI_BaseNPC *pEntity, float flTar
 	restore->m_fFlags = flags; // we need to restore these flags
 	change->m_fFlags = flags; // we have changed these flags
 	
-	if ( pEntity->m_RestoreData != NULL ) delete pEntity->m_RestoreData;
-	if ( pEntity->m_ChangeData != NULL ) delete pEntity->m_ChangeData;
 
-	pEntity->m_RestoreData = restore;
-	pEntity->m_ChangeData = change;
+	// FIXMOD_CHANGE - Mehis
+	if ( pEntity->m_pRestoreData != NULL ) delete pEntity->m_pRestoreData;
+	if ( pEntity->m_pChangeData != NULL ) delete pEntity->m_pChangeData;
+
+	pEntity->m_pRestoreData = restore;
+	pEntity->m_pChangeData = change;
+
 
 	if( sv_showlagcompensation.GetInt() == 1 )
 	{
@@ -1426,8 +1429,8 @@ void CLagCompensationManager::FinishLagCompensation( CBasePlayer *player )
 		if (!pNPC->m_bFlaggedForLagCompensation)
 			continue;
 
-		LagRecord *restore = pNPC->m_RestoreData;
-		LagRecord *change  = pNPC->m_ChangeData;
+		LagRecord *restore = pNPC->m_pRestoreData;
+		LagRecord *change  = pNPC->m_pChangeData;
 
 		bool restoreSimulationTime = false;
 

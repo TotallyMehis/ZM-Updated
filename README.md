@@ -3,7 +3,7 @@ An unofficial update to Zombie Master 1.2.1 modification. This update fixes cras
 **This is only needed on the server. Clients can still connect to a server running this update using the normal 1.2.1 game files.**
 
 
-Download link: https://dl.dropboxusercontent.com/u/142067828/download/zm121updated_001.zip
+Download link: https://dl.dropboxusercontent.com/u/142067828/download/zm121updated_002.zip
 
 
 **Changes:**
@@ -17,13 +17,14 @@ Download link: https://dl.dropboxusercontent.com/u/142067828/download/zm121updat
     - Known issues and their fixes integrated from the wiki.
     - Other minor changes.
 
-Note: All changes made are commented with 'FIXMOD_CHANGE'
-Client-project is also removed from the solution.
+Note: All changes made are commented with 'FIXMOD_CHANGE'. Client-project is also removed from the solution.
 
 
 **Edited files:**
 
     dlls/ai_concommands.cpp
+    dlls/ai_basenpc.h
+    dlls/ai_basenpc.cpp
     dlls/basecombatcharacter.cpp
     dlls/player.cpp
     dlls/team.cpp
