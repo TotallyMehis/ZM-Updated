@@ -2879,17 +2879,6 @@ void ZM_CC_Delete_Zombies( void )
 		return;
 	}
 
-	// Construct it here instead.
-	CTakeDamageInfo info;
-
-	info.SetAttacker( pPlayer );
-	info.SetDamageForce(Vector(0, 0, -10));
-
-	if (zm_sv_gibdeleted.GetBool())
-		info.SetDamageType( DMG_ALWAYSGIB );
-	else
-		info.SetDamageType( DMG_GENERIC );
-
 
 	//LAWYER:  Iterate through the selected zombies, kill them,
 	for(int i=0; i <gEntList.m_ZombieSelected.Count(); i++)
@@ -2901,20 +2890,18 @@ void ZM_CC_Delete_Zombies( void )
 
 		if (pAI && pPlayer->m_iZombiePool >= 1) //LAWYER: it's cheap to remove zombies
 		{
-			// FIXMOD_CHANGE - Mehis
-			// These won't change.
-			//CTakeDamageInfo info;
+			CTakeDamageInfo info;
 
 			info.SetDamage( pAI->m_iHealth * 2 );
-			//info.SetAttacker( pPlayer );
+			info.SetAttacker( pPlayer );
 			info.SetInflictor( pEnt );
-			//info.SetDamageForce(Vector(0, 0, -10));
+			info.SetDamageForce(Vector(0, 0, -10));
 			info.SetDamagePosition(pAI->GetAbsOrigin());
 
-			//if (zm_sv_gibdeleted.GetBool())
-			//	info.SetDamageType( DMG_ALWAYSGIB );
-			//else
-			//	info.SetDamageType( DMG_GENERIC );
+			if (zm_sv_gibdeleted.GetBool())
+				info.SetDamageType( DMG_ALWAYSGIB );
+			else
+				info.SetDamageType( DMG_GENERIC );
 
 			pAI->TakeDamage( info );
 

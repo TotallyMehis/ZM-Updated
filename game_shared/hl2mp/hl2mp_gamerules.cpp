@@ -2017,17 +2017,6 @@ void CHL2MPRules::EndRound()
 	//Msg("Spawning players...\n");
 	DevMsg("Spawning players...\n");
 
-	// FIXMOD_CHANGE - Mehis
-	// Do it here.
-	KeyValues *data = new KeyValues("data");
-
-	if ( data )
-	{
-		data->SetString( "title", "Objectives" );		// info panel title
-		data->SetString( "type", "1" );			// show userdata from stringtable entry
-		data->SetString( "msg",	"mapinfo" );		// use this stringtable entry
-	}
-
 	for (int i = 1; i <= gpGlobals->maxClients; i++ )
 	{
 		CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
@@ -2057,10 +2046,19 @@ void CHL2MPRules::EndRound()
                 pPlayerMP->m_iZMPriority += 10;
 			}
 			
+
+			KeyValues *data = new KeyValues("data");
+
 			//LAWYER:  Display map objectives on spawn
 			if (data)
 			{
+				data->SetString( "title", "Objectives" );		// info panel title
+				data->SetString( "type", "1" );			// show userdata from stringtable entry
+				data->SetString( "msg",	"mapinfo" );		// use this stringtable entry
+
 				pPlayerMP->ShowViewPortPanel( PANEL_INFO, true, data );
+
+				data->deleteThis();
 			}
 
 			//TGB: finally spawn this chap
@@ -2068,11 +2066,6 @@ void CHL2MPRules::EndRound()
 		
 		}
 				
-	}
-
-	if ( data )
-	{
-		data->deleteThis();
 	}
 
 	//LAWYER:  Increase the roundcounter!
