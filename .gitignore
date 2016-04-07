@@ -1,0 +1,6 @@
+*.suo
+*.ncb
+
+*.obj
+
+dlls/Release_hl2/
