@@ -10,14 +10,14 @@ Download link: https://dl.dropboxusercontent.com/u/142067828/download/zm121updat
 
     - Fixed zombie groups. Client and server will no longer crash. zm_group_manager entity is kept through round restarts.
     - Updated lag compensation with the latest version from the wiki. Now uses the npc interp.
-    - Made drowning consistent. Player will now have ~22 seconds of air time. May need rebalancing.
-    - Prevents molotov crash.
+    - Prevents molotov crash (caused by specific player models).
+    - Fixed zombie selection. It is now easier.
     - Fixed zombie spawn node recursion crash. zm_basin_b3 playable again.
-    - Players can no longer climb with objects that have other objects parented to them.
-    - Known issues and their fixes integrated from the wiki.
+    - Known issues fixed from the wiki.
+    - Made drowning consistent. Player will now have ~22 seconds of air time. May need rebalancing.
     - Other minor changes.
 
-Note: All changes made are commented with 'FIXMOD_CHANGE'. Client-project is also removed from the solution.
+Note: All changes made are commented with 'FIXMOD_CHANGE'. Client-project is also removed from the solution. Compiling must be done with VS2003.
 
 
 **Edited files:**
@@ -40,4 +40,5 @@ Note: All changes made are commented with 'FIXMOD_CHANGE'. Client-project is als
     game_shared/hl2mp/hl2mp_gamerules.cpp
     game_shared/hl2mp/weapon_zm_carry.cpp
     game_shared/hl2mp/weapon_zm_molotov.cpp
+    tier1/utlbuffer.cpp
     ZombieMaster.sln
