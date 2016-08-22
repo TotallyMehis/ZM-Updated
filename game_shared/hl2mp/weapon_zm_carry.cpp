@@ -557,7 +557,8 @@ void CGrabController::AttachEntity( CBasePlayer *pPlayer, CBaseEntity *pEntity, 
 
 	// FIXMOD_CHANGE - Mehis
 	// Fixes people being able to climb with props that have entities parented to them.
-#ifndef CLIENT_DLL
+	// Commented off because some maps break due to this.
+/*#ifndef CLIENT_DLL
 	CUtlVector<CBaseEntity*> children;
 	GetAllChildren( pEntity, children );
 
@@ -567,10 +568,11 @@ void CGrabController::AttachEntity( CBasePlayer *pPlayer, CBaseEntity *pEntity, 
 		{
 			DevMsg( "Disabling prop's %i child %i collision\n", pEntity->entindex(), children[i]->entindex() );
 
+			
 			children[i]->AddSolidFlags( FSOLID_NOT_SOLID );
 		}
 	}
-#endif
+#endif*/
 	
 	// Give extra mass to the phys object we're actually picking up
 	pPhys->SetMass( REDUCED_CARRY_MASS );
@@ -625,10 +627,11 @@ void CGrabController::DetachEntity( bool bClearVelocity )
 	CBaseEntity *pEntity = GetAttached();
 	if ( pEntity )
 	{
-	// FIXMOD_CHANGE - Mehis
-	// Fixes people being able to climb with props that have entities parented to them.
-	// Enable the collision back.
-#ifndef CLIENT_DLL
+		// FIXMOD_CHANGE - Mehis
+		// Fixes people being able to climb with props that have entities parented to them.
+		// Enable the collision back.
+		// Commented off because some maps break due to this.
+/*#ifndef CLIENT_DLL
 		CUtlVector<CBaseEntity*> children;
 		GetAllChildren( pEntity, children );
 
@@ -643,7 +646,7 @@ void CGrabController::DetachEntity( bool bClearVelocity )
 				children[i]->RemoveSolidFlags( FSOLID_NOT_SOLID );
 			}
 		}
-#endif
+#endif*/
 
 		// Restore the LS blocking state
 		pEntity->SetBlocksLOS( m_bCarriedEntityBlocksLOS );

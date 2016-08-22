@@ -1033,7 +1033,7 @@ void ZM_CreateSquad()
 			// I doubt anybody expects the game to hold the same zombie in multiple groups.
 			len = g_pZombieGroupManager->m_pZombieLists.Count();
 
-			DevMsg( "Interating through %i groups.\n", len );
+			DevMsg( "Iterating through %i groups.\n", len );
 
 			for ( j = 0; j < len; j++ )
 			{
@@ -1676,7 +1676,12 @@ void CC_ZombieMaster_ZoneSelect ( void )
 
 
 	//CBaseEntity *pLoopEntity = NULL;
-	CAI_BaseNPC *pSelector = NULL;
+
+	// FIXMOD_CHANGE - Mehis
+	// Differentiate between BaseZombie and BaseCombatCharacter
+	CBaseCombatCharacter *pCC = NULL;
+	
+
 	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
 	if (!pPlayer || !pPlayer->IsZM())  return;
 
@@ -1711,9 +1716,15 @@ void CC_ZombieMaster_ZoneSelect ( void )
 		for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
 		{
 			//DevMsg("\nDeselecting zombie.");
-			CBaseCombatCharacter *pZombie = dynamic_cast< CBaseCombatCharacter * >(gEntList.m_ZombieSelected[i]);
-			pZombie->m_bConqSelected = false;
-			pZombie->m_pConqSelector = NULL;
+			pCC = dynamic_cast< CBaseCombatCharacter * >(gEntList.m_ZombieSelected[i]);
+
+			// FIXMOD_CHANGE - Mehis
+			// Checking can never hurt.
+			if ( pCC )
+			{
+				pCC->m_bConqSelected = false;
+				pCC->m_pConqSelector = NULL;
+			}
 		}
 		//purge selected list
 		gEntList.m_ZombieSelected.Purge();
@@ -1724,12 +1735,13 @@ void CC_ZombieMaster_ZoneSelect ( void )
 	//loop through list of zombies and check if they're in the selection region
 	for ( int i = 0; i < gEntList.m_ZombieList.Count(); i++)
 	{
-		pSelector = dynamic_cast< CAI_BaseNPC * >(gEntList.m_ZombieList[i]);
-		if (pSelector)
+		pCC = dynamic_cast< CBaseCombatCharacter * >(gEntList.m_ZombieList[i]);
+
+		if (pCC)
 		{
 			//DevMsg("NPC found... ");
 
-			Vector vNPCpos = pSelector->GetAbsOrigin();
+			Vector vNPCpos = pCC->GetAbsOrigin();
 			Vector vNPCscreen;
 			ZM_ScreenTransform(vNPCpos, vNPCscreen, worldToScreen);
 
@@ -1746,20 +1758,27 @@ void CC_ZombieMaster_ZoneSelect ( void )
 			{
 				//DevMsg(" NPC is within select-region!\n");
 				
-				CBaseCombatCharacter *pZombie = dynamic_cast< CBaseCombatCharacter * >(pSelector);
+				// FIXMOD_CHANGE - Mehis
+				// Remove redundant cast...
+				//CBaseCombatCharacter *pZombie = dynamic_cast< CBaseCombatCharacter * >(pSelector);
+				
 
 				//qck: Quick check on los; don't want selections through walls and such. Trace masked for windows, grates, etc.
 				trace_t		tr;
 				trace_t		tr2;
 				Vector		vecSpot;
 				Vector		vecTarget;
-				Vector		vecHeadTarget = vecTarget;
-
-				vecHeadTarget.z += 64;
-
+				// FIXMOD_CHANGE - Mehis
+				// vecHeadTarget was never set correctly.
+				// This will fix not being able to select zombie from the head.
+				Vector		vecHeadTarget// = vecTarget;
 
 				vecSpot = pPlayer->BodyTarget( pPlayer->GetAbsOrigin() , false );
-				vecTarget = pZombie->BodyTarget( pZombie->GetAbsOrigin() , false );
+				vecTarget = pCC->BodyTarget( pCC->GetAbsOrigin() , false );
+
+				vecHeadTarget = vecTarget;
+				vecHeadTarget.z += 64;
+
 
 				//TGB: some changes tried here because the two aft hulks in the "bash open door" manip in warehouse are hard to select
 				// they didn't really help, but I'm leaving them in for now.
@@ -1778,13 +1797,13 @@ void CC_ZombieMaster_ZoneSelect ( void )
 				}
 
 				//is it selected?
-				if (pZombie->m_pConqSelector != pPlayer)
+				if (pCC->m_pConqSelector != pPlayer)
 				{
 					//nope, select it
-					pZombie->m_pConqSelector = dynamic_cast< CBaseCombatCharacter * >(pPlayer);
-					pZombie->m_bConqSelected = true;
+					pCC->m_pConqSelector = dynamic_cast< CBaseCombatCharacter * >(pPlayer);
+					pCC->m_bConqSelected = true;
 					//add to selected zombies list
-					gEntList.m_ZombieSelected.AddToTail(pZombie);
+					gEntList.m_ZombieSelected.AddToTail(pCC);
 					selected_units = true;
 				}
 			}

@@ -218,7 +218,9 @@ CUtlBuffer::CUtlBuffer( int growSize, int initSize, int nFlags ) :
 CUtlBuffer::CUtlBuffer( const void *pBuffer, int nSize, int nFlags ) :
 	m_Memory( (unsigned char*)pBuffer, nSize ), m_Error(0)
 {
-	Assert( nSize != 0 );
+	// FIXMOD_CHANGE - Mehis
+	//Assert( nSize != 0 );
+	Assert( nSize >= 0 );
 
 	m_bLittleEndian = false;
 	m_Get = 0;
