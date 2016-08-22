@@ -1770,14 +1770,14 @@ void CC_ZombieMaster_ZoneSelect ( void )
 				Vector		vecTarget;
 				// FIXMOD_CHANGE - Mehis
 				// vecHeadTarget was never set correctly.
-				// This will fix not being able to select zombie from the head.
+				// This will fix not being able to select zombie in tight areas.
 				Vector		vecHeadTarget;// = vecTarget;
 
 				vecSpot = pPlayer->BodyTarget( pPlayer->GetAbsOrigin() , false );
 				vecTarget = pCC->BodyTarget( pCC->GetAbsOrigin() , false );
 
 				vecHeadTarget = vecTarget;
-				vecHeadTarget.z += 64;
+				vecHeadTarget.z += 64.0f;
 
 
 				//TGB: some changes tried here because the two aft hulks in the "bash open door" manip in warehouse are hard to select
