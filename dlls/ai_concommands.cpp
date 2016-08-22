@@ -1771,7 +1771,7 @@ void CC_ZombieMaster_ZoneSelect ( void )
 				// FIXMOD_CHANGE - Mehis
 				// vecHeadTarget was never set correctly.
 				// This will fix not being able to select zombie from the head.
-				Vector		vecHeadTarget// = vecTarget;
+				Vector		vecHeadTarget;// = vecTarget;
 
 				vecSpot = pPlayer->BodyTarget( pPlayer->GetAbsOrigin() , false );
 				vecTarget = pCC->BodyTarget( pCC->GetAbsOrigin() , false );
