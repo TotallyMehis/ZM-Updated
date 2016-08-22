@@ -3,9 +3,6 @@ An unofficial update to Zombie Master 1.2.1 modification. This update fixes cras
 **This is only needed on the server. Clients can still connect to a server running this update using the normal 1.2.1 game files.**
 
 
-Download link: https://dl.dropboxusercontent.com/u/142067828/download/zm121updated_002.zip
-
-
 **Changes:**
 
     - Fixed zombie groups. Client and server will no longer crash. zm_group_manager entity is kept through round restarts.
