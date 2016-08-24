@@ -548,6 +548,11 @@ CBaseCombatCharacter::CBaseCombatCharacter( void )
 	//TGB: init health ratio
 	m_flHealthRatio = 1.0f;
 	m_bForceServerRagdoll = ai_force_serverside_ragdoll.GetBool();
+
+
+	// FIXMOD_CHANGE - Mehis
+	// This was never null'd.
+	m_pConqSelector = NULL;
 }
 
 //------------------------------------------------------------------------------

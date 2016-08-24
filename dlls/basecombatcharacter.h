@@ -347,7 +347,11 @@ public:
 	CNetworkVar( float, m_flNextAttack );			// cannot attack again until this time
 	CNetworkVar( bool, m_bConqSelected );	//LAWYER:  bool that goes into selection things
 	CNetworkVar( float, m_flHealthRatio );	//TGB: current health ratio used for health circles
-	CBaseCombatCharacter *m_pConqSelector; //LAWYER:  The player selecting this combat-character
+
+	// FIXMOD_CHANGE - Mehis
+	// Why is this even here? Only players are able to select zombies.
+	//CBaseCombatCharacter *m_pConqSelector; //LAWYER:  The player selecting this combat-character
+	CBasePlayer* m_pConqSelector;
 
 protected:
 private:

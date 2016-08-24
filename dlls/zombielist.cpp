@@ -44,6 +44,14 @@ CZombieGroupManager::CZombieGroupManager()
 CZombieGroupManager::~CZombieGroupManager()
 {
 	m_pZombieLists.Purge();
+	
+
+	// FIXMOD_CHANGE - Mehis
+	// Kind of a hack. Should be using ehandles but since we only have one of these entities, it really doesn't matter.
+	if ( g_pZombieGroupManager == this )
+	{
+		g_pZombieGroupManager = NULL;
+	}
 }
 
 void CZombieGroupManager::Reset()

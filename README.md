@@ -3,6 +3,9 @@ An unofficial update to Zombie Master 1.2.1 modification. This update fixes cras
 **This is only needed on the server. Clients can still connect to a server running this update using the normal 1.2.1 game files.**
 
 
+You can download it [here](https://github.com/TotallyMehis/ZM-Updated/releases).
+
+
 **Changes:**
 
     - Fixed zombie groups. Client and server will no longer crash. zm_group_manager entity is kept through round restarts.
@@ -25,9 +28,11 @@ Note: All changes made are commented with 'FIXMOD_CHANGE'. Client-project is als
     dlls/basecombatcharacter.cpp
     dlls/player.cpp
     dlls/team.cpp
-    dlls/hl2_dll/npc_basezombie.cpp
+    dlls/hl2_dll/npc_BaseZombie.cpp
+    dlls/hl2_dll/npc_BaseZombie.h
     dlls/hl2_dll/grenade_molotov.cpp
     dlls/hl2mp/hl2mp_player.cpp
+    dlls/physics_main.cpp
     dlls/player_lagcompensation.cpp
     dlls/zombielist.h
     dlls/zombielist.cpp

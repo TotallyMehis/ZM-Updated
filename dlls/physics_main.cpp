@@ -393,7 +393,9 @@ bool CPhysicsPushedEntities::SpeculativelyCheckPush( PhysicsPushedInfo_t &info, 
 			//Assert( pBlocker->PhysicsTestEntityPosition() == false );
 			if ( !IsPushedPositionValid(pBlocker) )
 			{
-				Warning("Interpenetrating entities! (%s and %s)\n",
+				// FIXMOD_CHANGE - Mehis
+				// Warning to dev msg since this will get spammed a lot.
+				DevMsg("Interpenetrating entities! (%s and %s)\n",
 					pBlocker->GetClassname(), m_rgPusher[0].m_pEntity->GetClassname() );
 			}
 

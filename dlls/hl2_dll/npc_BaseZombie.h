@@ -329,6 +329,19 @@ public:
 	//TGB: returns type of zombie. Kind of ugly, but most our zombie code is in .cpp files we can't include, making casting just to typecheck hard
 	virtual int			GetZombieType() { return TYPE_INVALID; }
 
+
+	// FIXMOD_CHANGE - Mehis
+private:
+	void ResetRender(); // Reset render settings after fade.
+	void FreeResources(); // Free ZM resources.
+	void FreeSelector(); // Free selector and his zombie count.
+
+	unsigned char m_startRenderFx;
+	byte m_startAlpha;
+
+	bool m_bFreeResources;
+
+
 protected:
 
 	CSoundPatch	*m_pMoanSound;
@@ -375,6 +388,7 @@ protected:
 
 	//TGB: fadein stuff
 	float	m_fFadeFinish;
+
 
 	DECLARE_DATADESC();
 

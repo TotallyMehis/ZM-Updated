@@ -889,6 +889,12 @@ bool CZombieSpawn::CanSpawn(int type)
 	}
 	else
 	{
+		// FIXMOD_CHANGE - Mehis
+		// Streamlining a bit.
+		return ( m_iZombieFlags & (1 << type) ) ? true : false;
+
+
+/*
 		//TGB: set up list of what we can spawn
 
 		bool allowed[TYPE_TOTAL];
@@ -930,7 +936,7 @@ bool CZombieSpawn::CanSpawn(int type)
 		}
 
 		return allowed[type];
-
+*/
 	}
 
 	return false;

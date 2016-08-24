@@ -51,6 +51,30 @@
 #include "tier0/memdbgon.h"
 
 
+// FIXMOD_CHANGE - Mehis
+static void DeselectAllZombies( CBasePlayer* pPlayer )
+{
+	CBaseCombatCharacter* pCC = NULL;
+
+	for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
+	{
+		pCC = dynamic_cast<CBaseCombatCharacter*>( gEntList.m_ZombieSelected[i] );
+
+		if ( pCC )
+		{
+			pCC->m_bConqSelected = false;
+			pCC->m_pConqSelector = NULL;
+		}
+	}
+
+	gEntList.m_ZombieSelected.Purge();
+
+	if ( pPlayer )
+	{
+		pPlayer->m_iZombieSelected = 0;
+	}
+}
+
 //TGB: someday we should really reorganize all our crap here into separate files
 
 
@@ -907,7 +931,7 @@ void CC_Conq_NPC_Select_Index( void )
 					//Check if it's already selected
 					if (pSelector->m_pConqSelector != pPlayer)
 					{
-						pSelector->m_pConqSelector = dynamic_cast< CBaseCombatCharacter * >(pPlayer);
+						pSelector->m_pConqSelector = pPlayer;
 						pSelector->m_bConqSelected = true;
 						//Msg( "Selected\n" );
 					}
@@ -928,58 +952,44 @@ static ConCommand conq_npc_select_index("conq_npc_select_index", CC_Conq_NPC_Sel
 //------------------------------------------------------------------------------
 void CC_Conq_NPC_Select_Sphere( void )
 {
-
+	// FIXMOD_CHANGE - Mehis
+	// To my understanding, this isn't used at all.
+	// Fixing it because of ZM AI...
 	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
-	if (!pPlayer || pPlayer->GetTeamNumber() != 3)
-	{
-//		Msg("You aren't a Zombiemaster, and can't do that.\n");
-		return;
-	}
+	if ( !pPlayer ) return;
+
+	if ( !pPlayer->IsZM() ) return;
+
+
 	CBaseEntity *pIterated = NULL;
-	CAI_BaseNPC *pSelector = NULL;
-	//LAWYER:  Build a coordinate based vector here
+	CNPC_BaseZombie *pZombie = NULL;
+	
 
-	Vector forward;
-	Vector tracetarget;
-	VectorNormalize( tracetarget );
+	Vector pos;
+	pos.x = atof(engine->Cmd_Argv(1) );
+	pos.y = atof(engine->Cmd_Argv(2) );
+	pos.z = atof(engine->Cmd_Argv(3) );
 
-	tracetarget.x = atof(engine->Cmd_Argv(1) );
-	tracetarget.y = atof(engine->Cmd_Argv(2) );
-	tracetarget.z = atof(engine->Cmd_Argv(3) );
-	if (pPlayer)
+
+	while ( (pIterated = gEntList.FindEntityInSphere( pIterated, pos, 256 )) != NULL )
 	{
-			//Now we have a traceresult, find some Entities and give them the command!
-		while ( (pIterated = gEntList.FindEntityInSphere( pIterated, tracetarget, 256 )) != NULL ) //Should probably be a smaller search area.  Large games could be squidged by this function
-		{	//LAWYER:  We could do this by doing a FindEntityByName and going through the list of NPCs, but that's unweildy.
-				pSelector = dynamic_cast< CAI_BaseNPC * >(pIterated); //Check if it's a commandable character
-				if (pSelector)
-				{//We have a valid NPC!  Whoopaaahhh!
-					//Now to check if it's on our team
-//					if (pSelector->GetConqTeam() == pPlayer->GetConqTeam())
-//					{ //It's on our team!  Check if it's selected!
+			pZombie = dynamic_cast<CNPC_BaseZombie*>( pIterated );
+			if ( pZombie && pZombie->m_pConqSelector != pPlayer )
+			{
+				pZombie->m_pConqSelector = pPlayer;
+				pZombie->m_bConqSelected = true;
 
-					//Right, it's on our team, let's work magic.
-					//Check if it's already selected
-					if (pSelector->m_pConqSelector != pPlayer)
-					{
-						pSelector->m_pConqSelector = dynamic_cast< CBaseCombatCharacter * >(pPlayer);
-						pSelector->m_bConqSelected = true;
-
-						//add to selected zombies list
-						gEntList.m_ZombieSelected.AddToTail(pSelector);
-					}
-
-//					}
-
-				}
-		}
+				//add to selected zombies list
+				if ( !gEntList.m_ZombieSelected.HasElement( pZombie ) )
+					gEntList.m_ZombieSelected.AddToTail( pZombie );
+			}
 	}
+
 	//TGB: update selected count
 	pPlayer->m_iZombieSelected = gEntList.m_ZombieSelected.Count();
 
-	DevMsg("\nZombies in selected list (post-sphere select): %i", gEntList.m_ZombieSelected.Count());
 
-
+	DevMsg( "Zombies in selected list (post-sphere select): %i\n", gEntList.m_ZombieSelected.Count() );
 }
 static ConCommand conq_npc_select_sphere("conq_npc_select_sphere", CC_Conq_NPC_Select_Sphere, "Selects units in a sphere");
 
@@ -987,9 +997,6 @@ void ZM_CreateSquad()
 {	
 	// FIXMOD_CHANGE - Mehis
 	// Zombie group change.
-	//qck: If there isn't a manager entity, create one.
-	//if(manager == NULL)
-	//	manager = dynamic_cast<CZombieGroupManager *>(CreateEntityByName("zm_group_manager"));
 	if ( !g_pZombieGroupManager ) return;
 
 	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );  
@@ -998,7 +1005,8 @@ void ZM_CreateSquad()
 		return;
 	
 
-	//qck: Don't create zombie groups if you haven't selected any zombies
+	// FIXMOD_CHANGE - Mehis
+	//if(gEntList.m_ZombieSelected.Count() < 1)
 	if(gEntList.m_ZombieSelected.Count() < 1)
 	{
 		ClientPrint( pPlayer, HUD_PRINTTALK, "No zombies selected!\n" );
@@ -1015,6 +1023,8 @@ void ZM_CreateSquad()
 	int j, found, len;
 	CZombieGroup* tempGroup;
 
+	// FIXMOD_CHANGE - Mehis
+	//for(int i=0; i < gEntList.m_ZombieSelected.Count(); i++)
 	for(int i=0; i < gEntList.m_ZombieSelected.Count(); i++)
 	{
 		CBaseEntity* pIterator = gEntList.m_ZombieSelected[i];
@@ -1043,14 +1053,14 @@ void ZM_CreateSquad()
 				// Not using FindAndDelete so we know that we deleted it.
 				if ( tempGroup && (found = tempGroup->m_ZombieGroupMembers.Find( pIterator )) >= 0 )
 				{
-					Msg( "Attempted to insert a zombie with a group into another group! Deleting zombie from previous group...\n" );
+					DevMsg( "Attempted to insert a zombie with a group into another group! Deleting zombie from previous group...\n" );
 
 					tempGroup->m_ZombieGroupMembers.Remove( found );
 					
 					// We don't have any more zombies in this group after deleting!
 					if ( !tempGroup->m_ZombieGroupMembers.Count() )
 					{
-						Msg( "Old group has no other zombies left. Removing group...\n" );
+						DevMsg( "Old group has no other zombies left. Removing group...\n" );
 						
 						// Tell em we don't need this anymore.
 						// This will also prevent group stacking on the client.
@@ -1100,19 +1110,7 @@ void CC_ZM_GotoAndSelectSquad()
 	if ( !g_pZombieGroupManager ) return;
 
 
-	//qck: deselect any currently selected zombies
-	for(int i=0; i < gEntList.m_ZombieSelected.Count(); i++)
-	{
-		CNPC_BaseZombie* pSelector = dynamic_cast< CNPC_BaseZombie * >(gEntList.m_ZombieSelected[i]);
-		if (pSelector)
-		{
-			pSelector->m_bConqSelected = false;
-			pSelector->m_pConqSelector = NULL;
-		}
-		
-	}		
-
-	gEntList.m_ZombieSelected.Purge();
+	DeselectAllZombies( pPlayer );
 
 
 	// FIXMOD_CHANGE - Mehis
@@ -1147,7 +1145,7 @@ void CC_ZM_GotoAndSelectSquad()
 			{
 
 				CBaseCombatCharacter *pZombie = dynamic_cast< CBaseCombatCharacter * >(zombieGroup->m_ZombieGroupMembers[j]);
-				if(pZombie && !gEntList.m_ZombieSelected.HasElement(pZombie)) //LAWYER:  Make sure the same Zombie isn't selected twice
+				if(pZombie && pZombie->m_pConqSelector != pPlayer) //LAWYER:  Make sure the same Zombie isn't selected twice
 				{
 					// FIXMOD_CHANGE - Mehis
 					// It might not be 0 when it first gets here...
@@ -1209,9 +1207,11 @@ void CC_ZM_GotoAndSelectSquad()
 					//TGB: FIXME: if the zombie ptr is null here, should the zombie be removed from the group list?
 					//if (pZombie) //added safety check
 					//{
-					pZombie->m_pConqSelector = dynamic_cast< CBaseCombatCharacter * >(pPlayer);
+					pZombie->m_pConqSelector = pPlayer;
 					pZombie->m_bConqSelected = true;
-					gEntList.m_ZombieSelected.AddToTail( pZombie );
+
+					if ( !gEntList.m_ZombieSelected.HasElement( pZombie ) )
+						gEntList.m_ZombieSelected.AddToTail( pZombie );
 
 					// FIXMOD_CHANGE - Mehis
 					// Moved to the end.
@@ -1346,13 +1346,15 @@ static ConCommand zm_nightvison( "zm_nightvision", CC_ZM_NightVision, "Nightvisi
 
 void CC_ZombieMaster_AlternateSelect ( void )
 {
+	// FIXMOD_CHANGE - Mehis
+	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	if ( !pPlayer ) return;
 
-	//DevMsg("Zombies in selected list (pre-new select): %i\n", 0gEntList.m_ZombieSelected.Count());
+	if ( !pPlayer->IsZM() ) return;
 
-	//CBaseEntity *pLoopEntity = NULL;
-	CAI_BaseNPC *pSelector = NULL;
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
-	if (!pPlayer || !pPlayer->IsZM()) return;
+
+
+	CBaseCombatCharacter* pCC = NULL;
 
 	//get mouse coords
 	int mousex = atoi(engine->Cmd_Argv(1) );
@@ -1381,107 +1383,89 @@ void CC_ZombieMaster_AlternateSelect ( void )
 	for ( int i = 0; i < gEntList.m_ZombieList.Count(); i++)
 	{
 		//for testing purposes this is the same as sphere select for now
-		pSelector = dynamic_cast< CAI_BaseNPC * >(gEntList.m_ZombieList[i]);
-		if (pSelector)
+		pCC = dynamic_cast<CBaseCombatCharacter*>( gEntList.m_ZombieList[i] );
+		if ( !pCC ) continue;
+
+		if ( pCC->m_pConqSelector == pPlayer ) continue;
+
+
+		Vector vNPCpos = pCC->GetAbsOrigin();
+		Vector vNPCscreen;
+		ZM_ScreenTransform(vNPCpos, vNPCscreen, worldToScreen);
+		
+		//DevMsg("\nNPC @ x: %f, y: %f ;", vNPCscreen.x, vNPCscreen.y );
+
+		//attempt at converting the normalized coords to useful stuff
+		int iX =  0.5 * vNPCscreen[0] * scrWidth;
+		int iY = -0.5 * vNPCscreen[1] * scrHeight;
+		iX += 0.5 * scrWidth;
+		iY += 0.5 *	scrHeight;
+
+		//DevMsg(" Fixed @ x: %i, y: %i ;", iX, iY);
+
+		//TGB:
+		//The selectregion needs to be scaled to the distance between the NPC and
+		//the player. The distance can probably be calculated using vector stuff
+		//on vectors of both locations. Hopefully that distance can then be normalized or something
+		//into a positive float that can be used to scale the base region
+		
+
+		//get world locations for npc and player
+		Vector vDistance;
+		
+		Vector vZMpos = pPlayer->GetAbsOrigin();
+		VectorSubtract( vNPCpos, vZMpos, vDistance );
+
+		//clunky but as good as any I've come up with
+		float fDistFactor = 1 - (vDistance.Length() / 1000); //1000 = max distance for min regionsize
+		if (fDistFactor < 0.02) 
+			fDistFactor = 0.02;
+		
+		//DevMsg("Distvec: %f %f %f ; Distfactor: %f ;\n", vDistance.x, vDistance.y, vDistance.z, fDistFactor);
+		//DevMsg("\nNPC mag: %f ; ZM mag: %f ; Dist mag: %f ; fDistFactor: %f", vNPCpos.Length(), vZMpos.Length(), vDistance.Length(), fDistFactor );
+
+		//compare coordinates
+		//should perhaps scale region part to game's resolution somehow
+		const int region = (ZM_SELECTAREA_NPC * scrScaleFactor) * (fDistFactor * fDistFactor);
+		
+		if ( iX > mousex-region && iX < mousex+region && iY < mousey+region && iY > mousey-region)
 		{
-			Vector vNPCpos = pSelector->GetAbsOrigin();
-			Vector vNPCscreen;
-			ZM_ScreenTransform(vNPCpos, vNPCscreen, worldToScreen);
-			
-			//DevMsg("\nNPC @ x: %f, y: %f ;", vNPCscreen.x, vNPCscreen.y );
+			trace_t		tr;
+			Vector		vecSpot;
+			Vector		vecTarget;
 
-			//attempt at converting the normalized coords to useful stuff
-			int iX =  0.5 * vNPCscreen[0] * scrWidth;
-			int iY = -0.5 * vNPCscreen[1] * scrHeight;
-			iX += 0.5 * scrWidth;
-			iY += 0.5 *	scrHeight;
 
-			//DevMsg(" Fixed @ x: %i, y: %i ;", iX, iY);
+			vecSpot = pPlayer->BodyTarget( pPlayer->GetAbsOrigin() , false );
+			vecTarget = pCC->BodyTarget( pCC->GetAbsOrigin() , false );
+			UTIL_TraceLine( vecSpot, vecTarget, CONTENTS_SOLID, NULL, COLLISION_GROUP_NONE, &tr ); //test at feet level
 
-			//TGB:
-			//The selectregion needs to be scaled to the distance between the NPC and
-			//the player. The distance can probably be calculated using vector stuff
-			//on vectors of both locations. Hopefully that distance can then be normalized or something
-			//into a positive float that can be used to scale the base region
-			
-
-			//get world locations for npc and player
-			Vector vDistance;
-			
-			Vector vZMpos = pPlayer->GetAbsOrigin();
-			VectorSubtract( vNPCpos, vZMpos, vDistance );
-
-			//clunky but as good as any I've come up with
-			float fDistFactor = 1 - (vDistance.Length() / 1000); //1000 = max distance for min regionsize
-			if (fDistFactor < 0.02) 
-				fDistFactor = 0.02;
-			
-			//DevMsg("Distvec: %f %f %f ; Distfactor: %f ;\n", vDistance.x, vDistance.y, vDistance.z, fDistFactor);
-			//DevMsg("\nNPC mag: %f ; ZM mag: %f ; Dist mag: %f ; fDistFactor: %f", vNPCpos.Length(), vZMpos.Length(), vDistance.Length(), fDistFactor );
-
-			//compare coordinates
-			//should perhaps scale region part to game's resolution somehow
-			const int region = (ZM_SELECTAREA_NPC * scrScaleFactor) * (fDistFactor * fDistFactor);
-			
-			if ( iX > mousex-region && iX < mousex+region && iY < mousey+region && iY > mousey-region)
+			if ( tr.fraction == 1.0 )
 			{
-				//DevMsg(" NPC is within select-region!");
-				
-				CBaseCombatCharacter *pZombie = dynamic_cast< CBaseCombatCharacter * >(pSelector);
-
-				//qck: quick check to make sure zombies are in our los. Prevents them from being selected if they are behind walls, etc.
-				//still works fine through grates, windows, and so forth
-
-
-				//is it selected?
-				if (pZombie->m_pConqSelector != pPlayer)
-				{
-
-					trace_t		tr;
-					Vector		vecSpot;
-					Vector		vecTarget;
-
-
-					vecSpot = pPlayer->BodyTarget( pPlayer->GetAbsOrigin() , false );
-					vecTarget = pZombie->BodyTarget( pZombie->GetAbsOrigin() , false );
-					UTIL_TraceLine( vecSpot, vecTarget, CONTENTS_SOLID, NULL, COLLISION_GROUP_NONE, &tr ); //test at feet level
-
-					if ( tr.fraction == 1.0 )
-					{
-						DevMsg("Zombie in view\n");
-					}
-					else 
-					{
-						DevMsg("Zombie not in view\n");
-					}
-
-					//nope, select it
-					pZombie->m_pConqSelector = dynamic_cast< CBaseCombatCharacter * >(pPlayer);
-					pZombie->m_bConqSelected = true;
-					
-					//TGB: if we're not using sticky selection, deselect all currently selected zombies
-					if (sticky == false && zm_stickyselect.GetBool() == false)
-					{
-						for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
-						{
-							CBaseCombatCharacter *pSelZombie = dynamic_cast< CBaseCombatCharacter * >(gEntList.m_ZombieSelected[i]);
-							pSelZombie->m_bConqSelected = false;
-							pSelZombie->m_pConqSelector = NULL;
-						}
-						//purge selected list
-						gEntList.m_ZombieSelected.Purge();
-					}
-
-					//add to selected zombies list
-					gEntList.m_ZombieSelected.AddToTail(pZombie);
-					//TGB: update selected count
-					pPlayer->m_iZombieSelected = gEntList.m_ZombieSelected.Count();
-					return; //selected something
-				}
+				DevMsg("Zombie in view\n");
+			}
+			else 
+			{
+				DevMsg("Zombie not in view\n");
 			}
 			
+			//nope, select it
+			pCC->m_pConqSelector = pPlayer;
+			pCC->m_bConqSelected = true;
+			
+			//TGB: if we're not using sticky selection, deselect all currently selected zombies
+			if (sticky == false && zm_stickyselect.GetBool() == false)
+			{
+				DeselectAllZombies( pPlayer );
+			}
+
+			
+			gEntList.m_ZombieSelected.AddToTail( pCC );
+			
+			pPlayer->m_iZombieSelected = gEntList.m_ZombieSelected.Count();
+
+			return;
 		}
-	} //end while
+	}
 
 	//check for manipulates/spawns
 	CBaseEntity *pSelectEnt = NULL;
@@ -1654,16 +1638,7 @@ void CC_ZombieMaster_AlternateSelect ( void )
 	//if we are holding space, ie. using temp. sticky select, we won't deselect for ease of use (ie. misclick != screaming fury)
 	if ( !sticky )
 	{
-		//loop through (selected) zombies and deselect them
-		for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
-		{
-			//DevMsg("\nDeselecting zombie.");
-			CBaseCombatCharacter *pZombie = dynamic_cast< CBaseCombatCharacter * >(gEntList.m_ZombieSelected[i]);
-			pZombie->m_bConqSelected = false;
-			pZombie->m_pConqSelector = NULL;
-		}
-		//purge selected list
-		gEntList.m_ZombieSelected.Purge();
+		DeselectAllZombies( pPlayer );
 	}
 	
 }
@@ -1672,18 +1647,12 @@ static ConCommand zm_altselect_cc("zm_altselect_cc", CC_ZombieMaster_AlternateSe
 ConVar	zm_poweruser("zm_poweruser", "0", FCVAR_ARCHIVE, "Use this if you're a crazy awesome power user like TGB, and want to select stuff through a wall with your laser eyes.");
 void CC_ZombieMaster_ZoneSelect ( void )
 {
-	//DevMsg("\nZombies in selected list (pre-new select): %i", gEntList.m_ZombieSelected.Count());
-
-
-	//CBaseEntity *pLoopEntity = NULL;
-
 	// FIXMOD_CHANGE - Mehis
-	// Differentiate between BaseZombie and BaseCombatCharacter
-	CBaseCombatCharacter *pCC = NULL;
-	
+	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	if ( !pPlayer )  return;
 
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
-	if (!pPlayer || !pPlayer->IsZM())  return;
+	if ( !pPlayer->IsZM() ) return;
+
 
 	//get mouse coords
 	const int topLeftX = atoi(engine->Cmd_Argv(1) );
@@ -1712,123 +1681,100 @@ void CC_ZombieMaster_ZoneSelect ( void )
 	//TGB: by popular request, deselect selected zombies when zone-selecting new ones
 	if ( !sticky && !zm_stickyselect.GetBool() )
 	{
-		//loop through (selected) zombies and deselect them
-		for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
-		{
-			//DevMsg("\nDeselecting zombie.");
-			pCC = dynamic_cast< CBaseCombatCharacter * >(gEntList.m_ZombieSelected[i]);
-
-			// FIXMOD_CHANGE - Mehis
-			// Checking can never hurt.
-			if ( pCC )
-			{
-				pCC->m_bConqSelected = false;
-				pCC->m_pConqSelector = NULL;
-			}
-		}
-		//purge selected list
-		gEntList.m_ZombieSelected.Purge();
+		DeselectAllZombies( pPlayer );
 	}
 
-	bool selected_units = false;
+
+	
+	CBaseCombatCharacter *pCC = NULL;
 
 	//loop through list of zombies and check if they're in the selection region
 	for ( int i = 0; i < gEntList.m_ZombieList.Count(); i++)
 	{
 		pCC = dynamic_cast< CBaseCombatCharacter * >(gEntList.m_ZombieList[i]);
 
-		if (pCC)
+		if ( !pCC ) continue;
+
+		// Already selected.
+		if ( pCC->m_pConqSelector == pPlayer ) continue;
+
+
+		Vector vNPCpos = pCC->GetAbsOrigin();
+		Vector vNPCscreen;
+		ZM_ScreenTransform(vNPCpos, vNPCscreen, worldToScreen);
+
+		//attempt at converting the normalized coords to useful stuff
+		int iX =  0.5 * vNPCscreen[0] * scrWidth;
+		int iY = -0.5 * vNPCscreen[1] * scrHeight;
+		iX += 0.5 * scrWidth;
+		iY += 0.5 *	scrHeight;
+
+		//DevMsg("at x: %i, y: %i ...", iX, iY);
+
+		//compare coordinates
+		if ( iX > topLeftX && iX < botRightX && iY > topLeftY && iY < botRightY)
 		{
-			//DevMsg("NPC found... ");
 
-			Vector vNPCpos = pCC->GetAbsOrigin();
-			Vector vNPCscreen;
-			ZM_ScreenTransform(vNPCpos, vNPCscreen, worldToScreen);
+			//qck: Quick check on los; don't want selections through walls and such. Trace masked for windows, grates, etc.
+			trace_t		tr;
+			trace_t		tr2;
+			Vector		vecSpot;
+			Vector		vecTarget;
+			// FIXMOD_CHANGE - Mehis
+			// vecHeadTarget was never set correctly.
+			// This will fix not being able to select zombie in tight areas.
+			Vector		vecHeadTarget;// = vecTarget;
 
-			//attempt at converting the normalized coords to useful stuff
-			int iX =  0.5 * vNPCscreen[0] * scrWidth;
-			int iY = -0.5 * vNPCscreen[1] * scrHeight;
-			iX += 0.5 * scrWidth;
-			iY += 0.5 *	scrHeight;
+			vecSpot = pPlayer->BodyTarget( pPlayer->GetAbsOrigin() , false );
+			vecTarget = pCC->BodyTarget( pCC->GetAbsOrigin() , false );
 
-			//DevMsg("at x: %i, y: %i ...", iX, iY);
+			vecHeadTarget = vecTarget;
+			vecHeadTarget.z += 64.0f;
 
-			//compare coordinates
-			if ( iX > topLeftX && iX < botRightX && iY > topLeftY && iY < botRightY)
+
+			//TGB: some changes tried here because the two aft hulks in the "bash open door" manip in warehouse are hard to select
+			// they didn't really help, but I'm leaving them in for now.
+			CTraceFilterNoNPCs traceFilter( NULL, COLLISION_GROUP_NONE );
+			UTIL_TraceLine( vecSpot, vecTarget, MASK_OPAQUE, &traceFilter, &tr ); //test at feet level
+
+			UTIL_TraceLine( vecSpot, vecHeadTarget, MASK_OPAQUE, &traceFilter, &tr2 ); //test at head level
+			
+			// FIXMOD_CHANGE - Mehis
+			// Allow to select zombies when outside the world.
+			bool insolid = ( tr.startsolid || tr2.startsolid );
+			
+			if(!insolid && !(zm_poweruser.GetBool()))
 			{
-				//DevMsg(" NPC is within select-region!\n");
-				
-				// FIXMOD_CHANGE - Mehis
-				// Remove redundant cast...
-				//CBaseCombatCharacter *pZombie = dynamic_cast< CBaseCombatCharacter * >(pSelector);
-				
-
-				//qck: Quick check on los; don't want selections through walls and such. Trace masked for windows, grates, etc.
-				trace_t		tr;
-				trace_t		tr2;
-				Vector		vecSpot;
-				Vector		vecTarget;
-				// FIXMOD_CHANGE - Mehis
-				// vecHeadTarget was never set correctly.
-				// This will fix not being able to select zombie in tight areas.
-				Vector		vecHeadTarget;// = vecTarget;
-
-				vecSpot = pPlayer->BodyTarget( pPlayer->GetAbsOrigin() , false );
-				vecTarget = pCC->BodyTarget( pCC->GetAbsOrigin() , false );
-
-				vecHeadTarget = vecTarget;
-				vecHeadTarget.z += 64.0f;
-
-
-				//TGB: some changes tried here because the two aft hulks in the "bash open door" manip in warehouse are hard to select
-				// they didn't really help, but I'm leaving them in for now.
-				CTraceFilterNoNPCs traceFilter( NULL, COLLISION_GROUP_NONE );
-				UTIL_TraceLine( vecSpot, vecTarget, MASK_OPAQUE, &traceFilter, &tr ); //test at feet level
-
-				UTIL_TraceLine( vecSpot, vecHeadTarget, MASK_OPAQUE, &traceFilter, &tr2 ); //test at head level
-				
-				if(!(zm_poweruser.GetBool()))
+				if ( (tr.fraction != 1.0) && (tr2.fraction != 1.0) )
 				{
-					if ( (tr.fraction != 1.0) && (tr2.fraction != 1.0) )
-					{
-						//DevMsg("Zombie not in los: feet: %f head: %f wrld: %i\n", tr.fraction, tr.fraction, (int)tr.DidHitWorld());
-						return;
-					}
-				}
-
-				//is it selected?
-				if (pCC->m_pConqSelector != pPlayer)
-				{
-					//nope, select it
-					pCC->m_pConqSelector = dynamic_cast< CBaseCombatCharacter * >(pPlayer);
-					pCC->m_bConqSelected = true;
-					//add to selected zombies list
-					gEntList.m_ZombieSelected.AddToTail(pCC);
-					selected_units = true;
+					//DevMsg("Zombie not in los: feet: %f head: %f wrld: %i\n", tr.fraction, tr.fraction, (int)tr.DidHitWorld());
+					return;
 				}
 			}
 
+
+			pCC->m_pConqSelector = pPlayer;
+			pCC->m_bConqSelected = true;
+
+			//add to selected zombies list
+			if ( !gEntList.m_ZombieSelected.HasElement( pCC ) )
+				gEntList.m_ZombieSelected.AddToTail(pCC);
 		}
-	} //end while
+	}
 
 	//TGB: update selected count
 	pPlayer->m_iZombieSelected = gEntList.m_ZombieSelected.Count();
-
-	//if ( sticky || selected_units )
-	//if (sticky || selected_units || zm_stickyselect.GetBool() )
-	//	return;
-
-	//we didn't select anything, so we clicked on the ground or something
-	//TGB: don't have to deselect anything as we already did that beforehand
-	
 }
 static ConCommand zm_zoneselect_cc("zm_zoneselect_cc", CC_ZombieMaster_ZoneSelect, "Zone selection clientcommand");
 
 void CC_ZombieMaster_TypeSelect ( void )
 {
-	CAI_BaseNPC *pSelector = NULL;
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
-	if (!pPlayer || !pPlayer->IsZM() ) return;
+	// FIXMOD_CHANGE - Mehis
+	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	if ( !pPlayer ) return;
+
+	if ( !pPlayer->IsZM() ) return;
+
 
 	//get mouse coords
 	const int mousex = atoi(engine->Cmd_Argv(1) );
@@ -1852,133 +1798,102 @@ void CC_ZombieMaster_TypeSelect ( void )
 	//TGB: get sticky select setting of this command
 	const bool sticky = ( atoi(engine->Cmd_Argv(17)) ) ? true : false; //explicit int->bool conversion
 
-	char typeToSelect[30] = "None";
+	//char typeToSelect[30] = "None";
 	//FIND TYPE TO SELECT
+
+
+	int typeToSelect = CNPC_BaseZombie::TYPE_INVALID;
+
+	CNPC_BaseZombie* pZombie = NULL;
 
 	//loop through list of zombies and check if they're in the selection region
 	for ( int i = 0; i < gEntList.m_ZombieList.Count(); i++)
 	{
+		pZombie = dynamic_cast<CNPC_BaseZombie *>( gEntList.m_ZombieList[i] );
+		if ( !pZombie ) continue;
 
-		//make sure we don't already have a type
-		if ( !(Q_strcmp("None", typeToSelect) == 0) )
-			break;
 
-		pSelector = dynamic_cast< CAI_BaseNPC * >(gEntList.m_ZombieList[i]);
-		if (pSelector)
+		Vector vNPCpos = pZombie->GetAbsOrigin();
+		Vector vNPCscreen;
+		ZM_ScreenTransform(vNPCpos, vNPCscreen, worldToScreen);
+		
+		//attempt at converting the normalized coords to useful stuff
+		int iX =  0.5 * vNPCscreen[0] * scrWidth;
+		int iY = -0.5 * vNPCscreen[1] * scrHeight;
+		iX += 0.5 * scrWidth;
+		iY += 0.5 *	scrHeight;
+
+
+		//get world locations for npc and player
+		Vector vDistance;
+		Vector vZMpos = pPlayer->GetAbsOrigin();
+		VectorSubtract( vNPCpos, vZMpos, vDistance );
+
+		//clunky but as good as any I've come up with
+		float fDistFactor = 1 - (vDistance.Length() / 1000); //1000 = max distance for min regionsize
+		if (fDistFactor < 0.03) 
+			fDistFactor = 0.03;
+
+		//compare coordinates
+		//should perhaps scale region part to game's resolution somehow
+		//int region = ZM_SELECTAREA_NPC * (fDistFactor * fDistFactor);
+		const int region = (ZM_SELECTAREA_NPC * scrScaleFactor) * (fDistFactor * fDistFactor);
+		if ( iX > mousex-region && iX < mousex+region && iY < mousey+region && iY > mousey-region)
 		{
-			Vector vNPCpos = pSelector->GetAbsOrigin();
-			Vector vNPCscreen;
-			ZM_ScreenTransform(vNPCpos, vNPCscreen, worldToScreen);
+			// FIXMOD_CHANGE - Mehis
+			// Found our type...
+			typeToSelect = pZombie->GetZombieType();
 			
-			//attempt at converting the normalized coords to useful stuff
-			int iX =  0.5 * vNPCscreen[0] * scrWidth;
-			int iY = -0.5 * vNPCscreen[1] * scrHeight;
-			iX += 0.5 * scrWidth;
-			iY += 0.5 *	scrHeight;
+			DevMsg( "Type found. C: %s, T: %i\n", pZombie->GetClassname(), typeToSelect );
 
-
-			//get world locations for npc and player
-			Vector vDistance;
-			Vector vZMpos = pPlayer->GetAbsOrigin();
-			VectorSubtract( vNPCpos, vZMpos, vDistance );
-
-			//clunky but as good as any I've come up with
-			float fDistFactor = 1 - (vDistance.Length() / 1000); //1000 = max distance for min regionsize
-			if (fDistFactor < 0.03) 
-				fDistFactor = 0.03;
-
-			//compare coordinates
-			//should perhaps scale region part to game's resolution somehow
-			//int region = ZM_SELECTAREA_NPC * (fDistFactor * fDistFactor);
-			const int region = (ZM_SELECTAREA_NPC * scrScaleFactor) * (fDistFactor * fDistFactor);
-			if ( iX > mousex-region && iX < mousex+region && iY < mousey+region && iY > mousey-region)
-			{
-				//DevMsg(" NPC is within select-region!");
-				
-				CBaseCombatCharacter *pZombie = dynamic_cast< CBaseCombatCharacter * >(pSelector);
-
-				//we've found our type
-				Q_strcpy( typeToSelect, pZombie->GetClassname());
-				DevMsg("Type found. C: %s, T: %s\n", pZombie->GetClassname(), typeToSelect );
-
-				//is it selected?
-				if (pZombie->m_pConqSelector != pPlayer)
-				{
-					//nope, select it
-					pZombie->m_pConqSelector = dynamic_cast< CBaseCombatCharacter * >(pPlayer);
-					pZombie->m_bConqSelected = true;
-					//add to selected zombies list
-					gEntList.m_ZombieSelected.AddToTail(pZombie);
-					//return; //selected something
-				
-					break;
-				}
-			}
-			
+			break;
 		}
-	} //end typefind while
+	}
 
-	if ( Q_strcmp("None", typeToSelect) == 0 )
+	if ( typeToSelect == CNPC_BaseZombie::TYPE_INVALID )
 	{
-		Msg("No type found\n");
+		DevMsg( "No type found\n" );
 		return;
 	}
 
-	bool selected_units = false;
+
+	if ( !sticky )
+	{
+		DeselectAllZombies( pPlayer );
+	}
+
 
 	//SELECT ZOMBIES OF TYPE
 	for ( int i = 0; i < gEntList.m_ZombieList.Count(); i++)
 	{
-		pSelector = dynamic_cast< CAI_BaseNPC * >(gEntList.m_ZombieList[i]);
-		if (pSelector)
-		{
-			Vector vNPCpos = pSelector->GetAbsOrigin();
-			Vector vNPCscreen;
-			ZM_ScreenTransform(vNPCpos, vNPCscreen, worldToScreen);
-			
-			//attempt at converting the normalized coords to useful stuff
-			int iX =  0.5 * vNPCscreen[0] * scrWidth;
-			int iY = -0.5 * vNPCscreen[1] * scrHeight;
-			iX += 0.5 * scrWidth;
-			iY += 0.5 *	scrHeight;
-
-			//select zombie if on screen and of correct type
-			if ( iX > 0 && iX < scrWidth && iY < scrHeight && iY > 0 && Q_strcmp(pSelector->GetClassname(), typeToSelect) == 0)
-			{
-				CBaseCombatCharacter *pZombie = dynamic_cast< CBaseCombatCharacter * >(pSelector);
-				//is it selected?
-				if (pZombie->m_pConqSelector != pPlayer)
-				{
-					//nope, select it
-					pZombie->m_pConqSelector = dynamic_cast< CBaseCombatCharacter * >(pPlayer);
-					pZombie->m_bConqSelected = true;
-					//add to selected zombies list
-					gEntList.m_ZombieSelected.AddToTail(pZombie);
-					//return; //selected something
-					selected_units = true;
-				}
-			}
-			
-		}
-	} //end type select while
-
-	//TGB: update selected count
-	pPlayer->m_iZombieSelected = gEntList.m_ZombieSelected.Count();
-
-	if (selected_units || sticky)
-		return;
-
-	//loop through (selected) zombies and deselect them
-	for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
-	{
-		//DevMsg("\nDeselecting zombie.");
-		CBaseCombatCharacter *pZombie = dynamic_cast< CBaseCombatCharacter * >(gEntList.m_ZombieSelected[i]);
-		pZombie->m_bConqSelected = false;
-		pZombie->m_pConqSelector = NULL;
-    }
-	//purge selected list
-	gEntList.m_ZombieSelected.Purge();
+		pZombie = dynamic_cast<CNPC_BaseZombie *>( gEntList.m_ZombieList[i] );
+		if ( !pZombie ) continue;
 	
+		if ( pZombie->m_pConqSelector == pPlayer ) continue;
+
+
+		Vector vNPCpos = pZombie->GetAbsOrigin();
+		Vector vNPCscreen;
+		ZM_ScreenTransform(vNPCpos, vNPCscreen, worldToScreen);
+		
+		//attempt at converting the normalized coords to useful stuff
+		int iX =  0.5 * vNPCscreen[0] * scrWidth;
+		int iY = -0.5 * vNPCscreen[1] * scrHeight;
+		iX += 0.5 * scrWidth;
+		iY += 0.5 *	scrHeight;
+
+		//select zombie if on screen and of correct type
+		if ( iX > 0 && iX < scrWidth && iY < scrHeight && iY > 0 && pZombie->GetZombieType() == typeToSelect)
+		{
+			pZombie->m_pConqSelector = pPlayer;
+			pZombie->m_bConqSelected = true;
+
+			if ( !gEntList.m_ZombieSelected.HasElement( pZombie ) )
+				gEntList.m_ZombieSelected.AddToTail( pZombie );
+		}
+	}
+
+	pPlayer->m_iZombieSelected = gEntList.m_ZombieSelected.Count();
 }
 static ConCommand zm_typeselect_cc("zm_typeselect_cc", CC_ZombieMaster_TypeSelect, "Type selection clientcommand");
 
@@ -1987,27 +1902,28 @@ static ConCommand zm_typeselect_cc("zm_typeselect_cc", CC_ZombieMaster_TypeSelec
 //--------------------------------------------------------------
 void CC_ZombieMaster_SelectAll ( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
-	if (!pPlayer || pPlayer->GetTeamNumber() != 3) return;
+	// FIXMOD_CHANGE - Mehis
+	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	if ( !pPlayer ) return;
 
-	//SELECT ZOMBIES
-	for ( int i = 0; i < gEntList.m_ZombieList.Count(); i++)
+	if ( !pPlayer->IsZM() ) return;
+
+
+	for ( int i = 0; i < gEntList.m_ZombieList.Count(); i++ )
 	{
 		CBaseCombatCharacter *pZombie = dynamic_cast< CBaseCombatCharacter * >(gEntList.m_ZombieList[i]);
-		//is it selected?
+
 		if (pZombie && pZombie->m_pConqSelector != pPlayer)
 		{
-			//nope, select it
-			pZombie->m_pConqSelector = dynamic_cast< CBaseCombatCharacter * >(pPlayer);
+			pZombie->m_pConqSelector = pPlayer;
 			pZombie->m_bConqSelected = true;
-			//add to selected zombies list
-			gEntList.m_ZombieSelected.AddToTail(pZombie);
+			
+			if ( !gEntList.m_ZombieSelected.HasElement( pZombie ) )
+				gEntList.m_ZombieSelected.AddToTail( pZombie );
 		}
 	}
-
-	//TGB: update selected count
-	pPlayer->m_iZombieSelected = gEntList.m_ZombieSelected.Count();
 	
+	pPlayer->m_iZombieSelected = gEntList.m_ZombieSelected.Count();
 }
 static ConCommand zm_select_all("zm_select_all", CC_ZombieMaster_SelectAll, "Select all zombies");
 
@@ -2018,12 +1934,13 @@ static ConCommand zm_select_all("zm_select_all", CC_ZombieMaster_SelectAll, "Sel
 //------------------------------------------------------------------------------
 void ZM_NPC_Target_Object( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
-	if (!pPlayer || pPlayer->GetTeamNumber() != 3)
-		return;
+	// FIXMOD_CHANGE - Mehis
+	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	if ( !pPlayer ) return;
 
-	CAI_BaseNPC *pSelector = NULL;
+	if ( !pPlayer->IsZM() ) return;
 
+	
 	//LAWYER:  Build a coordinate based vector here
 	Vector forward;
 	Vector tracetarget;
@@ -2036,74 +1953,45 @@ void ZM_NPC_Target_Object( void )
 	const int entityIndex = atoi(engine->Cmd_Argv(4) ); //LAWYER:  Collect the entity's index
 
 	CBaseEntity *pEntity = UTIL_EntityByIndex( entityIndex );
-	if (pEntity)
+
+
+	// Factor all this into one loop.
+	bool bSwat;
+	bool bBreak;
+
+	if ( pEntity )
 	{
-		//figure out what kind of stuff we targeted
-		//if it's a physobj we order swatters to go and swat, others to move
-		IPhysicsObject *physobj = pEntity->VPhysicsGetObject();
-		if ( physobj && physobj->IsAsleep() && physobj->IsMoveable() )
-		{
-			//it's a physobj
-			//DevMsg("Targeted a physobj!\n");
-			//set the swatters to SCHED_ZOMBIE_SWATITEM
-			for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
-			{	
-				CNPC_BaseZombie *pZombie = dynamic_cast< CNPC_BaseZombie * >(gEntList.m_ZombieSelected[i]); //Check if it's a commandable character
-				if (pZombie && pZombie->CanSwatPhysicsObjects())
-				{
-					//DevMsg("Setting swat schedule");
-					//pZombie->SetSchedule(SCHED_ZOMBIE_SWATITEM);
-					pZombie->ZM_ForceSwat(pEntity);
-
-				}
-				else if (pZombie)
-				{
-					CAI_BaseNPC::ConqCommanded(tracetarget, forward, true, pZombie);
-				}
-			}
-			//all selected zombies have been commanded
-			return;
-		}
-		//if it's a breakable we make them attack it... somehow
-		else if (pEntity->GetHealth() > 0)
-		{
-			//it's a breakable
-			//for now we'll try to just make them swat it, which is essentially attacking with added physics shove
-			//the physics shove will simply not occur as this has no physobj
-
-			for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
-			{	
-				CNPC_BaseZombie *pZombie = dynamic_cast< CNPC_BaseZombie * >(gEntList.m_ZombieSelected[i]); //Check if it's a commandable character
-				if (pZombie /*&& pZombie->CanSwatPhysicsObjects()*/)
-				{
-					DevMsg("Setting breakable-swat schedule");
-					//pZombie->SetSchedule(SCHED_ZOMBIE_SWATITEM);
-					pZombie->ZM_ForceSwat(pEntity, true);
-
-				}
-				/*else if (pZombie)
-				{
-					CAI_BaseNPC::ConqCommanded(tracetarget, forward, true, pZombie);
-				}*/
-			}
-			//all selected zombies have been commanded
-			return;
-		}
-
-		
-	}
+		IPhysicsObject* phys = pEntity->VPhysicsGetObject();
 	
-	//invalid entity, just do a move
+		bSwat = ( phys && phys->IsAsleep() && phys->IsMoveable() );
 
-	//new method: loop through selected zombie list
-	for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
-	{	
-		pSelector = dynamic_cast< CAI_BaseNPC * >(gEntList.m_ZombieSelected[i]); //Check if it's a commandable character
-		if (pSelector)
-			CAI_BaseNPC::ConqCommanded(tracetarget, forward, true, pSelector);
+		bBreak = ( pEntity->GetHealth() > 0 );
+	}
+	else
+	{
+		bSwat = false;
+		bBreak = false;
 	}
 
+	for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++ )
+	{
+		CNPC_BaseZombie *pZombie = dynamic_cast<CNPC_BaseZombie *>( gEntList.m_ZombieSelected[i] );
 
+		if ( !pZombie ) continue;
+		
+
+		if ( (bSwat && pZombie->CanSwatPhysicsObjects()) || bBreak )
+		{
+			DevMsg( "Setting breakable-swat schedule\n" );
+
+			pZombie->ZM_ForceSwat( pEntity );
+		}
+		else
+		{
+			// Base zombie is derived of base ai. No need to cast.
+			CAI_BaseNPC::ConqCommanded( tracetarget, forward, true, pZombie );
+		}
+	}
 }
 static ConCommand zm_npc_target_object("zm_npc_target_object", ZM_NPC_Target_Object, "Commands an NPC to interact with an object");
 
@@ -2171,7 +2059,7 @@ void CC_Conq_NPC_Move_Coords( void )
 	//Now we have a traceresult, find some Entities and give them the command!
 	//while ( (pIterated = gEntList.FindEntityInSphere( pIterated, pPlayer->GetAbsOrigin(), MAX_COORD_RANGE )) != NULL ) //Should probably be a smaller search area.  Large games could be squidged by this function
 	//new method: loop through selected zombie list
-	for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
+	for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++ )
 	{	//LAWYER:  We could do this by doing a FindEntityByName and going through the list of NPCs, but that's unweildy.
 		pSelector = dynamic_cast< CAI_BaseNPC * >(gEntList.m_ZombieSelected[i]); //Check if it's a commandable character
 			if (pSelector)
@@ -2201,31 +2089,24 @@ static ConCommand conq_npc_move_coords("conq_npc_move_coords", CC_Conq_NPC_Move_
 //qck: It'd be cooler to have one function to change modes, but for testing I'm leaving it basic.
 void ZM_NPC_Switch_Mode_Defense( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
-	if (!pPlayer || pPlayer->GetTeamNumber() != 3)
-	{
-//		Msg("You aren't a Zombiemaster, and can't do that.\n");
-		return;
-	}
+	// FIXMOD_CHANGE - Mehis
+	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	if ( !pPlayer ) return;
+
+	if ( !pPlayer->IsZM() ) return;
+
 
 	CNPC_BaseZombie *pSelector = NULL;
 
-	if (pPlayer)
-	{
-		for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
-		{	//LAWYER:  We could do this by doing a FindEntityByName and going through the list of NPCs, but that's unweildy.
-			pSelector = dynamic_cast< CNPC_BaseZombie * >(gEntList.m_ZombieSelected[i]); //Check if it's a commandable character
-			if (pSelector)
-			{
-				//qck: Go ahead and change the mode of every zombie currently selected
-				pSelector->SetZombieMode( ZOMBIE_MODE_DEFENSE );
-
-			}
+	for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
+	{	//LAWYER:  We could do this by doing a FindEntityByName and going through the list of NPCs, but that's unweildy.
+		pSelector = dynamic_cast< CNPC_BaseZombie * >(gEntList.m_ZombieSelected[i]); //Check if it's a commandable character
+		if (pSelector)
+		{
+			//qck: Go ahead and change the mode of every zombie currently selected
+			pSelector->SetZombieMode( ZOMBIE_MODE_DEFENSE );
 		}
 	}
-
-	//TGB: moved clientside
-	//ClientPrint( pPlayer, HUD_PRINTTALK, "Selected zombies now on defense...\n" );
 }
 
 static ConCommand zm_npc_switch_mode_defense("zm_switch_to_defense", ZM_NPC_Switch_Mode_Defense, " ");
@@ -2233,36 +2114,32 @@ static ConCommand zm_npc_switch_mode_defense("zm_switch_to_defense", ZM_NPC_Swit
 //qck: It'd be cooler to have one function to change modes, but for testing I'm leaving it basic.
 void ZM_NPC_Switch_Mode_Offense( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
-	if (!pPlayer || pPlayer->GetTeamNumber() != 3)
-	{
-//		Msg("You aren't a Zombiemaster, and can't do that.\n");
-		return;
-	}
+	// FIXMOD_CHANGE - Mehis
+	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	if ( !pPlayer ) return;
+
+	if ( !pPlayer->IsZM() ) return;
+
 
 	CNPC_BaseZombie *pSelector = NULL;
 
-	if (pPlayer)
-	{
-		for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
-		{	//LAWYER:  We could do this by doing a FindEntityByName and going through the list of NPCs, but that's unweildy.
-			pSelector = dynamic_cast< CNPC_BaseZombie * >(gEntList.m_ZombieSelected[i]); //Check if it's a commandable character
-			if (pSelector)
+
+	for ( int i = 0; i < gEntList.m_ZombieSelected.Count(); i++)
+	{	//LAWYER:  We could do this by doing a FindEntityByName and going through the list of NPCs, but that's unweildy.
+		pSelector = dynamic_cast< CNPC_BaseZombie * >(gEntList.m_ZombieSelected[i]); //Check if it's a commandable character
+		if (pSelector)
+		{
+			//qck: Go ahead and change the mode of every zombie currently selected. Make them forget whatever enemies they had. 
+			bool result = pSelector->SetZombieMode( ZOMBIE_MODE_OFFENSE );
+		
+			//TGB: if the zombie did not ignore us, continue with the other stuff, else don't interfere with whatever it's doing
+			if (result)
 			{
-				//qck: Go ahead and change the mode of every zombie currently selected. Make them forget whatever enemies they had. 
-				bool result = pSelector->SetZombieMode( ZOMBIE_MODE_OFFENSE );
-			
-				//TGB: if the zombie did not ignore us, continue with the other stuff, else don't interfere with whatever it's doing
-				if (result)
-				{
-					pSelector->SetEnemy(NULL);
-					pSelector->SetSchedule(SCHED_IDLE_STAND);
-				}
+				pSelector->SetEnemy(NULL);
+				pSelector->SetSchedule(SCHED_IDLE_STAND);
 			}
 		}
 	}
-	//moved clientside
-	//ClientPrint( pPlayer, HUD_PRINTTALK, "Selected zombies now on offense...\n" );
 }
 
 static ConCommand zm_npc_switch_mode_offense("zm_switch_to_offense", ZM_NPC_Switch_Mode_Offense, " ");
@@ -2315,66 +2192,57 @@ static ConCommand conq_npc_deselect("conq_npc_deselect", CC_Conq_NPC_Deselect, "
 //------------------------------------------------------------------------------
 void CC_ZombieMaster_Select_Index( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
-	if (!pPlayer || pPlayer->GetTeamNumber() != 3)
-	{
-		return;
-	}
+	// FIXMOD_CHANGE - Mehis
+	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	if ( !pPlayer ) return;
+
+	if ( !pPlayer->IsZM() ) return;
 
 	//The meat of the selection tool
-	CBaseEntity *pEntity = NULL;
+
+	int entityIndex = atoi(engine->Cmd_Argv(1) );
+
+
+	CBaseEntity *pEntity = UTIL_EntityByIndex( entityIndex );
+
+	if ( !pEntity ) return;
+
+
+	
+	
 	CZombieManipulate *pZombieManipulate = NULL;
 	CZombieSpawn *pZombieSpawn = NULL;
 	//TGB: for some reason we're not using the ambushpoint stuff it appears, so I'm commenting this out
 	//CZombieAmbushPoint *pAmbushPoint = NULL;
 
 
-	if (pPlayer)
+	pZombieManipulate = dynamic_cast< CZombieManipulate * >(pEntity);
+	if (pZombieManipulate && pZombieManipulate->IsActive())
 	{
-		int entityIndex = atoi(engine->Cmd_Argv(1) );
+		pPlayer->m_iLastSelected = entityIndex;
+		pPlayer->m_iLastCost = pZombieManipulate->m_iCost;
+		pPlayer->m_iLastTrapCost = pZombieManipulate->m_iTrapCost;
+		Q_strncpy( pPlayer->m_szLastDescription.GetForModify(), STRING(pZombieManipulate->m_szDescription), sizeof(pPlayer->m_szLastDescription));
 
-		pEntity = UTIL_EntityByIndex( entityIndex );
-		if (pEntity)
-		{
-			pZombieManipulate = dynamic_cast< CZombieManipulate * >(pEntity);
-			pZombieSpawn = dynamic_cast< CZombieSpawn * >(pEntity);
-			//pAmbushPoint = dynamic_cast< CZombieAmbushPoint * >(pEntity);
-			if (pZombieManipulate && pZombieManipulate->IsActive())
-			{
-				pPlayer->m_iLastSelected = entityIndex;
-				pPlayer->m_iLastCost = pZombieManipulate->m_iCost;
-				pPlayer->m_iLastTrapCost = pZombieManipulate->m_iTrapCost;
-				Q_strncpy( pPlayer->m_szLastDescription.GetForModify(), STRING(pZombieManipulate->m_szDescription), sizeof(pPlayer->m_szLastDescription));
+		//TODO: we could just send keyvalues with costs/description/etc along here in a usermessage...
+		pPlayer->ShowViewPortPanel( PANEL_MANIPULATE, true ); 
+		
+		return;
+	}
+	
+	pZombieSpawn = dynamic_cast< CZombieSpawn * >(pEntity);
+	if (pZombieSpawn && pZombieSpawn->IsActive())
+	{
+		//more stuff that could be usermessage'd instead of clunky netvars
+		pPlayer->m_iLastSelected = entityIndex;
+		pPlayer->m_iLastZombieFlags = pZombieSpawn->m_iZombieFlags;
 
-				//TODO: we could just send keyvalues with costs/description/etc along here in a usermessage...
-				pPlayer->ShowViewPortPanel( PANEL_MANIPULATE, true ); 
-				
-				return;
-			}
-			else if (pZombieSpawn && pZombieSpawn->IsActive())
-			{
-				//more stuff that could be usermessage'd instead of clunky netvars
-				pPlayer->m_iLastSelected = entityIndex;
-				pPlayer->m_iLastZombieFlags = pZombieSpawn->m_iZombieFlags;
+		DevMsg("Server has Zflags as: %i\n");
 
-				DevMsg("Server has Zflags as: %i\n");
+		pZombieSpawn->ShowBuildMenu(true);
 
-				pZombieSpawn->ShowBuildMenu(true);
-
-				return;
-			}
-			//else if (pAmbushPoint)
-			//{
-				/*DevMsg("Hmmmmmz\n");
-				pPlayer->m_iLastSelected = entityIndex;
-
-				pPlayer->ShowViewPortPanel( PANEL_AMBUSH, true );
-
-				return;*/
-			//}
-		}
-	}		
-
+		return;
+	}
 }
 static ConCommand zombiemaster_select_index("zombiemaster_select_index", CC_ZombieMaster_Select_Index, "Messes about with ZombieMaster specific stuff");
 
@@ -2801,12 +2669,12 @@ static ConCommand create_trap("create_trap", CC_Create_Trap, "Creates a trap at 
 //------------------------------------------------------------------------------
 void ZM_CC_Create_Ambush( void )
 {
+	// FIXMOD_CHANGE - Mehis
 	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   
+	if ( !pPlayer ) return;
 
-	if (!pPlayer || pPlayer->GetTeamNumber() != 3)
-	{
-		return;
-	}
+	if ( !pPlayer->IsZM() ) return;
+
 
 	if(gEntList.m_ZombieSelected.Count() == 0)
 	{
@@ -2814,8 +2682,6 @@ void ZM_CC_Create_Ambush( void )
 		return;
 	}
 
-	CBaseEntity *pEntity = NULL;
-	CZombieAmbushPoint *pAmbushPoint = NULL;
 
 	Vector vecTrapCoordinates;
 	VectorNormalize( vecTrapCoordinates );
@@ -2824,57 +2690,58 @@ void ZM_CC_Create_Ambush( void )
 	vecTrapCoordinates.y = atof(engine->Cmd_Argv(2) );
 	vecTrapCoordinates.z = atof(engine->Cmd_Argv(3) );
 
-	int entityIndex = pPlayer->m_iLastSelected;
 
-	pEntity = UTIL_EntityByIndex( entityIndex );
+	// FIXMOD_CHANGE - Mehis
+	// Useless...
+	//int entityIndex = pPlayer->m_iLastSelected;
+	//pEntity = UTIL_EntityByIndex( entityIndex );
 	
-	CBaseEntity *pTempAmbush = (CBaseEntity *)CreateEntityByName( "info_ambush_point" );
 
-	if ( pTempAmbush  )
+	CZombieAmbushPoint* pAmbushPoint = dynamic_cast<CZombieAmbushPoint*>( CreateEntityByName( "info_ambush_point" ) );
+
+	if ( !pAmbushPoint ) return;
+
+	//qck: For all selected zombies, give them an ambush point, and put them in ambush mode.
+	for( int i=0; i <gEntList.m_ZombieSelected.Count(); i++ )
 	{
-		pAmbushPoint = dynamic_cast< CZombieAmbushPoint * >(pTempAmbush );
-		if (pAmbushPoint)
+		CBaseEntity* pEnt = gEntList.m_ZombieSelected.Element(i);
+
+		if (!pEnt) return;
+
+		CNPC_BaseZombie* pAI = dynamic_cast<CNPC_BaseZombie*>(pEnt);
+
+		if (!pAI) return;
+			
+		//TGB: if this zombie is a fastie who is already on the ceiling, ignore it
+		if (pAI->IsCurSchedule(SCHED_FASTZOMBIE_CEILING_CLING) || 
+			pAI->IsCurSchedule(SCHED_FASTZOMBIE_CEILING_JUMP))
+			continue;
+		
+
+		if(pAI->HasAnAmbushPoint())
 		{
-			//qck: For all selected zombies, give them an ambush point, and put them in ambush mode.
-			for(int i=0; i <gEntList.m_ZombieSelected.Count(); i++)
+			//TGB: unregister from existing ambush
+			if (pAI->m_pAmbushPoint)
 			{
-				CBaseEntity* pEnt = gEntList.m_ZombieSelected.Element(i);
+				pAI->m_pAmbushPoint->RemoveFromAmbush(pAI);
 
-				if (!pEnt) return;
-
-				CNPC_BaseZombie* pAI = dynamic_cast<CNPC_BaseZombie*>(pEnt);
-
-				if (!pAI) return;
-					
-				//TGB: if this zombie is a fastie who is already on the ceiling, ignore it
-				if (pAI->IsCurSchedule(SCHED_FASTZOMBIE_CEILING_CLING) || 
-					pAI->IsCurSchedule(SCHED_FASTZOMBIE_CEILING_JUMP))
-					continue;
-				
-
-				if(pAI->HasAnAmbushPoint())
-				{
-					//TGB: unregister from existing ambush
-					if (pAI->m_pAmbushPoint)
-					{
-						pAI->m_pAmbushPoint->RemoveFromAmbush(pAI);
-
-						//if old ambush is now empty, it will be removed
-						//as all zombies can have only 1 ambush assigned, there can be only as many
-						//ambushes as zombies (1 for each max), preventing excessive spam
-					}
-				}
-
-				//qck: We are in an ambush now. Tell them, and tell them where their point is.
-				pAI->m_bIsInAmbush = true;
-				pAI->SetZombieMode( ZOMBIE_MODE_AMBUSH );
-				pAI->m_pAmbushPoint = pAmbushPoint->AssignAmbushPoint( pAI );
+				//if old ambush is now empty, it will be removed
+				//as all zombies can have only 1 ambush assigned, there can be only as many
+				//ambushes as zombies (1 for each max), preventing excessive spam
 			}
-			pTempAmbush->SetAbsOrigin( vecTrapCoordinates );
-			pTempAmbush->Spawn();
-			pTempAmbush->Activate();
 		}
+
+		//qck: We are in an ambush now. Tell them, and tell them where their point is.
+		pAI->m_bIsInAmbush = true;
+		pAI->SetZombieMode( ZOMBIE_MODE_AMBUSH );
+		pAI->m_pAmbushPoint = pAmbushPoint->AssignAmbushPoint( pAI );
 	}
+
+	pAmbushPoint->SetAbsOrigin( vecTrapCoordinates );
+	pAmbushPoint->Spawn();
+	pAmbushPoint->Activate();
+
+
 	ClientPrint( pPlayer, HUD_PRINTTALK, "Created a new ambush point.\n" ); //qck: This will work for messages, but it only works on the server, which sucks.
 }
 
@@ -2886,12 +2753,13 @@ static ConCommand zm_create_ambush("zm_create_ambush", ZM_CC_Create_Ambush, "Set
 static ConVar zm_sv_gibdeleted("zm_sv_gibdeleted", "1", FCVAR_NONE, "If enabled, zombies that the ZM deletes will explode instead of ragdolling (note that this is set by the server).");
 void ZM_CC_Delete_Zombies( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   
+	// FIXMOD_CHANGE - Mehis
+	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	if ( !pPlayer ) return;
 
-	if (!pPlayer || pPlayer->GetTeamNumber() != 3)
-	{
-		return;
-	}
+	if ( !pPlayer->IsZM() ) return;
+
+
 	if(gEntList.m_ZombieSelected.Count() == 0)
 	{
 		Msg("No zombies selected! Cannot delete anything!\n");
@@ -2902,18 +2770,15 @@ void ZM_CC_Delete_Zombies( void )
 	//LAWYER:  Iterate through the selected zombies, kill them,
 	for(int i=0; i <gEntList.m_ZombieSelected.Count(); i++)
 	{
-		CBaseEntity* pEnt = gEntList.m_ZombieSelected[i];
-		if (!pEnt) return;
+		CNPC_BaseZombie* pAI = dynamic_cast<CNPC_BaseZombie*>(gEntList.m_ZombieSelected[i]);
 
-		CNPC_BaseZombie* pAI = dynamic_cast<CNPC_BaseZombie*>(pEnt);
-
-		if (pAI && pPlayer->m_iZombiePool >= 1) //LAWYER: it's cheap to remove zombies
+		if (pAI && pAI->m_lifeState == LIFE_ALIVE && pPlayer->m_iZombiePool >= 1) //LAWYER: it's cheap to remove zombies
 		{
 			CTakeDamageInfo info;
 
 			info.SetDamage( pAI->m_iHealth * 2 );
 			info.SetAttacker( pPlayer );
-			info.SetInflictor( pEnt );
+			info.SetInflictor( pAI );
 			info.SetDamageForce(Vector(0, 0, -10));
 			info.SetDamagePosition(pAI->GetAbsOrigin());
 
@@ -2933,8 +2798,6 @@ void ZM_CC_Delete_Zombies( void )
 		}
 
 	}
-	
-	
 }
 static ConCommand zm_delete_zombies("zm_deletezombies", ZM_CC_Delete_Zombies, "Release selected Zombies");
 

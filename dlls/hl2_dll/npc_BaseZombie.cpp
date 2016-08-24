@@ -289,6 +289,8 @@ CNPC_BaseZombie::CNPC_BaseZombie()
 	//TGB CYCLEDEBUG
 	//UseClientSideAnimation(); //TGB: we want to have the client animate to avoid stutter
 
+	// FIXMOD_CHANGE - Mehis
+	m_bFreeResources = false;
 }
 
 
@@ -300,6 +302,11 @@ CNPC_BaseZombie::~CNPC_BaseZombie()
 
 	//TGB: find and delete zombie from list
 	gEntList.m_ZombieList.FindAndRemove(this);
+	
+	// FIXMOD_CHANGE - Mehis
+	FreeResources();
+	FreeSelector();
+
 	//we can't be selected if we're dead! lol
 	gEntList.m_ZombieSelected.FindAndRemove(this);
 	
@@ -322,6 +329,40 @@ CNPC_BaseZombie::~CNPC_BaseZombie()
 	if ( g_pZombieGroupManager )
 	{
 		g_pZombieGroupManager->DropZombieFromAll( this );
+	}
+}
+
+void CNPC_BaseZombie::FreeResources()
+{
+	if ( !m_bFreeResources ) return;
+
+
+	CBasePlayer* pZM = CBasePlayer::GetZM();
+	
+	if ( pZM )
+	{
+		pZM->m_iZombiePopCount -= GetPopCost();
+		
+		// Don't go below 0...
+		if ( pZM->m_iZombiePopCount < 0 )
+			pZM->m_iZombiePopCount = 0;
+	}
+
+	m_bFreeResources = false;
+}
+
+void CNPC_BaseZombie::FreeSelector()
+{
+	m_bConqSelected = false;
+
+	if ( m_pConqSelector )
+	{
+		if ( m_pConqSelector->m_iZombieSelected > 0 )
+		{
+			m_pConqSelector->m_iZombieSelected--;
+		}
+
+		m_pConqSelector = NULL;
 	}
 }
 
@@ -904,7 +945,9 @@ int CNPC_BaseZombie::OnTakeDamage_Alive( const CTakeDamageInfo &inputInfo )
 	//force our rendering to normal seeing as we're actively participating
 	//things also spaz out otherwise if we have been ignited
 	if (m_nRenderFX == kRenderFxSolidFast)
-		m_nRenderFX = kRenderFxNone;
+		// FIXMOD_CHANGE - Mehis
+		ResetRender();
+		//m_nRenderFX = kRenderFxNone;
 	
 	//TGB: our zombies never get chopped. Also causes legs-model precache error
 	/*
@@ -1773,6 +1816,12 @@ void CNPC_BaseZombie::Spawn( void )
 	}
 	
 
+	// FIXMOD_CHANGE - Mehis
+	// Cache our starting renderfx and alpha.
+	// Some maps edit these. (eg. zm_diamondshoals)
+	m_startRenderFx = m_nRenderFX.Get();
+	m_startAlpha = GetRenderColor().a;
+
 	// Zombies get to cheat for 6 seconds (sjb)
 	//TGB: This is only going to make them run off I believe
 	//GetEnemies()->SetFreeKnowledgeDuration( 6.0 );
@@ -1780,7 +1829,16 @@ void CNPC_BaseZombie::Spawn( void )
 	//TGB: pretty fade effects, experimental
 	SetRenderColorA(0);
 	m_nRenderFX = kRenderFxSolidFast;
-	m_fFadeFinish = gpGlobals->curtime + 4.0f; //reset to a normal rendermode when we're definitely done
+
+	// FIXMOD_CHANGE - Mehis
+	// Make this a bit faster. At 60 fps, the fade finishes in 1 second.
+	//m_fFadeFinish = gpGlobals->curtime + 4.0f; //reset to a normal rendermode when we're definitely done
+	m_fFadeFinish = gpGlobals->curtime + 1.0f;
+
+
+	// FIXMOD_CHANGE - Mehis
+	m_bFreeResources = true;
+
 
 	//TGB: fire game event
 	HL2MPRules()->ZombieSpawned(this);
@@ -2093,7 +2151,6 @@ int CNPC_BaseZombie::GetSwatActivity( void )
 	}
 }
 
-
 //---------------------------------------------------------
 //---------------------------------------------------------
 void CNPC_BaseZombie::GatherConditions( void )
@@ -2104,7 +2161,9 @@ void CNPC_BaseZombie::GatherConditions( void )
 
 	//TGB: hackety hack, putting this here as it happens every think
 	if (m_nRenderFX == kRenderFxSolidFast && m_fFadeFinish < gpGlobals->curtime)
-		m_nRenderFX = kRenderFxNone;
+		// FIXMOD_CHANGE - Mehis
+		ResetRender();
+		//m_nRenderFX = kRenderFxNone;
 
 	//TGB: they should do this also in "commanded"-state, but I don't know if we have an NPC_STATE corresponding to that
 	if( m_NPCState == NPC_STATE_COMBAT && !m_fIsTorso )
@@ -2605,10 +2664,9 @@ void CNPC_BaseZombie::BecomeTorso( const Vector &vecTorsoForce, const Vector &ve
 //---------------------------------------------------------
 void CNPC_BaseZombie::Event_Killed( const CTakeDamageInfo &info )
 {
-	//unregister at ZM
-	CBasePlayer *pZM = CBasePlayer::GetZM();
-	if (pZM)
-		pZM->m_iZombiePopCount -= GetPopCost();
+	// FIXMOD_CHANGE - Mehis
+	FreeResources();
+	FreeSelector();
 
 	HL2MPRules()->ZombieKilled(this, info);
 
@@ -2999,6 +3057,13 @@ bool CNPC_BaseZombie::OnInsufficientStopDist( AILocalMoveGoal_t *pMoveGoal, floa
 	}
 	
 	return false;
+}
+
+// FIXMOD_CHANGE - Mehis
+void CNPC_BaseZombie::ResetRender()
+{
+	m_nRenderFX = m_startRenderFx;
+	SetRenderColorA( m_startAlpha );
 }
 
 //-----------------------------------------------------------------------------

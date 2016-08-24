@@ -6309,7 +6309,12 @@ void CBasePlayer::UpdateClientData( void )
 	//TGB: update client with zombiecount. Kind of ugly.
 	//m_iZombiePopCount.Set( gEntList.m_ZombieList.Count() );
 
-	m_iZombieSelected.Set( gEntList.m_ZombieSelected.Count() ); //qck: I turned this back on for something in the HUD. Was there a reason to keep it off? It wasn't updating correctly without this. 
+
+	// FIXMOD_CHANGE - Mehis
+	// Why is this here?
+	// This is now tracked by other code.
+
+	//m_iZombieSelected.Set( gEntList.m_ZombieSelected.Count() ); //qck: I turned this back on for something in the HUD. Was there a reason to keep it off? It wasn't updating correctly without this. 
 																//TGB: not a big deal, just hacky to do this every tick whether we selected something new or not
 	// Let any global rules update the HUD, too
 	g_pGameRules->UpdateClientData( this );
