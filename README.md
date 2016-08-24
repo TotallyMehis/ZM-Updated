@@ -12,6 +12,8 @@ You can download it [here](https://github.com/TotallyMehis/ZM-Updated/releases).
     - Updated lag compensation with the latest version from the wiki. Now uses the npc interp.
     - Prevents molotov crash (caused by specific player models).
     - Fixed zombie selection. It is now easier.
+	- Map's zombie render settings work. (eg. zm_diamondshoal wraiths)
+	- A zombie will always free its resources, even when its entity is killed.
     - Fixed zombie spawn node recursion crash. zm_basin_b3 playable again.
     - Known issues fixed from the wiki.
     - Made drowning consistent. Player will now have ~22 seconds of air time. May need rebalancing.
