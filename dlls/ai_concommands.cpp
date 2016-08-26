@@ -1984,7 +1984,7 @@ void ZM_NPC_Target_Object( void )
 		{
 			DevMsg( "Setting breakable-swat schedule\n" );
 
-			pZombie->ZM_ForceSwat( pEntity );
+			pZombie->ZM_ForceSwat( pEntity, bBreak );
 		}
 		else
 		{
