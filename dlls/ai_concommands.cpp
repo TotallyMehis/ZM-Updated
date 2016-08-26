@@ -2929,48 +2929,30 @@ static ConCommand npc_create_loc("npc_create_loc", CC_NPC_Create_Loc, "Creates a
 //------------------------------------------------------------------------------
 void CC_Manipulate( void )
 {
-//	Warning("Manipulating\n");
-
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
-
-	if (pPlayer->GetTeamNumber() != 3)
-	{
-//		Msg("You aren't a Zombiemaster, and can't do that.\n");
-		return;
-	}
-	CBaseEntity *pEntity = NULL;
-	CZombieManipulate *pZombieManipulate = NULL;
+	// FIXMOD_CHANGE - Mehis
+	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
 	
+	// Was never null checked.
+	if ( !pPlayer ) return;
 
-	if (pPlayer)
+	if ( !pPlayer->IsZM() ) return;
+
+
+	int entityIndex = pPlayer->m_iLastSelected;
+
+
+	CZombieManipulate* pZombieManipulate = dynamic_cast<CZombieManipulate*>( UTIL_EntityByIndex( entityIndex ) );
+	if ( !pZombieManipulate ) return;
+
+
+	if ( pPlayer->m_iZombiePool >= pZombieManipulate->m_iCost )
 	{
-//			Warning("We have a player\n");
-		int entityIndex = pPlayer->m_iLastSelected; //LAWYER:  Collect the entity's index
-
-		pEntity = UTIL_EntityByIndex( entityIndex );
-		if (pEntity)
-		{
-//				Warning("We have an entity\n");
-			pZombieManipulate = dynamic_cast< CZombieManipulate * >(pEntity);
-			if (pZombieManipulate)
-//				Warning("We have a manipulate\n");
-			{ //LAWYER: It's a manipulatable!  DO SOMETHING!
-						//We should stick a gump in here, but for now, we'll skip it
-//						Msg("Activated!\n");
-				if (pPlayer->m_iZombiePool >= pZombieManipulate->m_iCost)
-				{
-					//Warning("We should be activating it\n");
-						pPlayer->m_iZombiePool -= pZombieManipulate->m_iCost;
-						pZombieManipulate->Trigger(pPlayer);
-				}
-				else
-				{
-					//	Warning("Not enough resources!\n");
-					ClientPrint( pPlayer, HUD_PRINTTALK, "Not enough resources!\n");
-
-				}
-			}
-		}
+		pPlayer->m_iZombiePool -= pZombieManipulate->m_iCost;
+		pZombieManipulate->Trigger( pPlayer );
+	}
+	else
+	{
+		ClientPrint( pPlayer, HUD_PRINTTALK, "Not enough resources!\n" );
 	}
 }
 static ConCommand manipulate("manipulate", CC_Manipulate, "Activates a Manipulate");
