@@ -2531,45 +2531,39 @@ static ConCommand reset_trapmode("reset_trapmode", CC_Reset_Trap_Mode);
 //------------------------------------------------------------------------------
 void CC_Set_Rally_Point( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   
+	// FIXMOD_CHANGE - Mehis
+	CBasePlayer* pPlayer = UTIL_GetCommandClient();
+	if ( !pPlayer ) return;
 
-	if (!pPlayer || pPlayer->GetTeamNumber() != 3)
-	{
-		return;
-	}
+	if ( !pPlayer->IsZM() ) return;
 
-	CBaseEntity *pEntity = NULL;
-	CZombieSpawn *pZombieSpawn = NULL;
-
-	Vector vecRallyCoordiantes;
-	VectorNormalize( vecRallyCoordiantes );
-
-	vecRallyCoordiantes.x = atof(engine->Cmd_Argv(1) );
-	vecRallyCoordiantes.y = atof(engine->Cmd_Argv(2) );
-	vecRallyCoordiantes.z = atof(engine->Cmd_Argv(3) );
 
 	int entityIndex = pPlayer->m_iLastSelected;
 
-	pEntity = UTIL_EntityByIndex( entityIndex );
+	CZombieSpawn* pZombieSpawn = dynamic_cast<CZombieSpawn*>( UTIL_EntityByIndex( entityIndex ) );
+	if ( !pZombieSpawn ) return;
 
-	//qck: If the last thing we selected was a zombie spawn (it has to be) do some things.
-	if (pEntity)
-	{
-		pZombieSpawn = dynamic_cast< CZombieSpawn * >(pEntity);
-		if (pZombieSpawn && pZombieSpawn->rallyPoint)
-		{
-			pZombieSpawn->rallyPoint->SetCoordinates( vecRallyCoordiantes );
-			pZombieSpawn->rallyPoint->ActivateRallyPoint();
-			DevMsg("Rally point set at: %f %f %f \n", vecRallyCoordiantes.x, vecRallyCoordiantes.y, vecRallyCoordiantes.z);
-
-			//TGB: if we set a rally point, we had the spawn's menu open and it closed for this, so now reopen it
-			pZombieSpawn->ShowBuildMenu(true);
-		}
+	if ( !pZombieSpawn->rallyPoint ) return;
 
 
-	}
+	Vector pos;
+	pos.x = atof( engine->Cmd_Argv( 1 ) );
+	pos.y = atof( engine->Cmd_Argv( 2 ) );
+	pos.z = atof( engine->Cmd_Argv( 3 ) );
+
+	
+	pZombieSpawn->rallyPoint->SetCoordinates( pos );
+	pZombieSpawn->rallyPoint->ActivateRallyPoint();
+
+	//TGB: if we set a rally point, we had the spawn's menu open and it closed for this, so now reopen it
+	pZombieSpawn->ShowBuildMenu( true );
+
+
+	DevMsg( "Rally point set at: %f %f %f \n", pos.x, pos.y, pos.z );
+
+
+	// This was being printed even when no rally point was set...
 	ClientPrint( pPlayer, HUD_PRINTTALK, "New rally point set...\n" );
-
 }
 
 static ConCommand set_rally_point("set_rally_point", CC_Set_Rally_Point, "Set the rally point location");
