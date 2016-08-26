@@ -887,7 +887,7 @@ CON_COMMAND(ainet_generate_report_only, "Generate a report to the console.")
 //------------------------------------------------------------------------------
 void CC_Conq_NPC_Select_Index( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();   //find a pointer to the player that the client controls
 	if (!pPlayer || pPlayer->GetTeamNumber() != 3)
 	{
 //		Msg("You aren't a Zombiemaster, and can't do that.\n");
@@ -955,7 +955,7 @@ void CC_Conq_NPC_Select_Sphere( void )
 	// FIXMOD_CHANGE - Mehis
 	// To my understanding, this isn't used at all.
 	// Fixing it because of ZM AI...
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();   //find a pointer to the player that the client controls
 	if ( !pPlayer ) return;
 
 	if ( !pPlayer->IsZM() ) return;
@@ -999,7 +999,7 @@ void ZM_CreateSquad()
 	// Zombie group change.
 	if ( !g_pZombieGroupManager ) return;
 
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );  
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();  
 	
 	if (!pPlayer || !pPlayer->IsZM())
 		return;
@@ -1091,8 +1091,7 @@ static ConCommand zm_createsquad("zm_createsquad", ZM_CreateSquad, "Create a squ
 //qck: Still need to actually do the "teleport" part, heh
 void CC_ZM_GotoAndSelectSquad()
 {
-	
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	if (!pPlayer || !pPlayer->IsZM()) return;
 
 	//qck: Grab the handle serial number from the client, find out which group it belongs to, snap origin and angles.
@@ -1245,7 +1244,7 @@ void ZM_CC_Print_HUD()
 	//Msg("String reads %s\n", text);
 	//Msg("String size: %i\n", sizeof(text));
 
-	CBasePlayer* pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer* pPlayer = UTIL_GetCommandClient();
 	if(pPlayer)
 		ClientPrint( pPlayer, HUD_PRINTTALK, text);
 }
@@ -1291,7 +1290,7 @@ int ZM_ScreenTransform( const Vector& point, Vector& screen, VMatrix& worldToScr
 void CC_ZombieMaster_GiveResources (void)
 {
 	// FIXMOD_CHANGE - Mehis
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	if ( !pPlayer ) return;
 
 	// Msg to print.
@@ -1312,7 +1311,7 @@ static ConVar zm_stickyselect("zm_stickyselect", "0", FCVAR_ARCHIVE, "Toggles wh
 //qck: Nightvision for the zombie master
 void CC_ZM_NightVision()
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();   //find a pointer to the player that the client controls
 	if (!pPlayer || !pPlayer->IsZM()) 
 		return;
 
@@ -1348,7 +1347,7 @@ static ConCommand zm_nightvison( "zm_nightvision", CC_ZM_NightVision, "Nightvisi
 void CC_ZombieMaster_AlternateSelect ( void )
 {
 	// FIXMOD_CHANGE - Mehis
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	if ( !pPlayer ) return;
 
 	if ( !pPlayer->IsZM() ) return;
@@ -1649,7 +1648,7 @@ ConVar	zm_poweruser("zm_poweruser", "0", FCVAR_ARCHIVE, "Use this if you're a cr
 void CC_ZombieMaster_ZoneSelect ( void )
 {
 	// FIXMOD_CHANGE - Mehis
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	if ( !pPlayer )  return;
 
 	if ( !pPlayer->IsZM() ) return;
@@ -1771,7 +1770,7 @@ static ConCommand zm_zoneselect_cc("zm_zoneselect_cc", CC_ZombieMaster_ZoneSelec
 void CC_ZombieMaster_TypeSelect ( void )
 {
 	// FIXMOD_CHANGE - Mehis
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	if ( !pPlayer ) return;
 
 	if ( !pPlayer->IsZM() ) return;
@@ -1904,7 +1903,7 @@ static ConCommand zm_typeselect_cc("zm_typeselect_cc", CC_ZombieMaster_TypeSelec
 void CC_ZombieMaster_SelectAll ( void )
 {
 	// FIXMOD_CHANGE - Mehis
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	if ( !pPlayer ) return;
 
 	if ( !pPlayer->IsZM() ) return;
@@ -1936,7 +1935,7 @@ static ConCommand zm_select_all("zm_select_all", CC_ZombieMaster_SelectAll, "Sel
 void ZM_NPC_Target_Object( void )
 {
 	// FIXMOD_CHANGE - Mehis
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	if ( !pPlayer ) return;
 
 	if ( !pPlayer->IsZM() ) return;
@@ -1999,7 +1998,7 @@ static ConCommand zm_npc_target_object("zm_npc_target_object", ZM_NPC_Target_Obj
 //TGB: line formation command handler
 void ZM_NPC_Move_Line ( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();   //find a pointer to the player that the client controls
 	if (!pPlayer || pPlayer->GetTeamNumber() != 3)
 		return;
 
@@ -2039,7 +2038,7 @@ static ConCommand zm_linecommand_cc("zm_linecommand_cc", ZM_NPC_Move_Line, "Comm
 //------------------------------------------------------------------------------
 void CC_Conq_NPC_Move_Coords( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();   //find a pointer to the player that the client controls
 	if (!pPlayer || (pPlayer && pPlayer->GetTeamNumber() != 3))
 	{
 //		Msg("You aren't a Zombiemaster, and can't do that.\n");
@@ -2091,7 +2090,7 @@ static ConCommand conq_npc_move_coords("conq_npc_move_coords", CC_Conq_NPC_Move_
 void ZM_NPC_Switch_Mode_Defense( void )
 {
 	// FIXMOD_CHANGE - Mehis
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	if ( !pPlayer ) return;
 
 	if ( !pPlayer->IsZM() ) return;
@@ -2116,7 +2115,7 @@ static ConCommand zm_npc_switch_mode_defense("zm_switch_to_defense", ZM_NPC_Swit
 void ZM_NPC_Switch_Mode_Offense( void )
 {
 	// FIXMOD_CHANGE - Mehis
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	if ( !pPlayer ) return;
 
 	if ( !pPlayer->IsZM() ) return;
@@ -2194,7 +2193,7 @@ static ConCommand conq_npc_deselect("conq_npc_deselect", CC_Conq_NPC_Deselect, "
 void CC_ZombieMaster_Select_Index( void )
 {
 	// FIXMOD_CHANGE - Mehis
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	if ( !pPlayer ) return;
 
 	if ( !pPlayer->IsZM() ) return;
@@ -2313,7 +2312,7 @@ void SummonZombie(const char* text, CBasePlayer *pZM, int spawnidx, int amount =
 //------------------------------------------------------------------------------
 void CC_Summon( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();   //find a pointer to the player that the client controls
 	if (!pPlayer || pPlayer->IsZM() == false)
 		return;
 
@@ -2407,7 +2406,7 @@ void CC_Summongroup( void )
 {
 	//TGB: group summon now adds 5 to the queue
 	
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();   //find a pointer to the player that the client controls
 	if (!pPlayer || pPlayer->IsZM() == false)
 		return;
 
@@ -2426,7 +2425,7 @@ static ConCommand summongroup("summongroup", CC_Summongroup, "Summon a group of 
 //--------------------------------------------------------------
 void CC_ZM_JumpCeiling()
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	if (!pPlayer || pPlayer->IsZM() == false)
 		return;
 
@@ -2572,7 +2571,7 @@ static ConCommand set_rally_point("set_rally_point", CC_Set_Rally_Point, "Set th
 //------------------------------------------------------------------------------
 void CC_Create_Trap( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();   
 
 	if (!pPlayer || pPlayer->IsZM() == false)
 	{
@@ -2665,7 +2664,7 @@ static ConCommand create_trap("create_trap", CC_Create_Trap, "Creates a trap at 
 void ZM_CC_Create_Ambush( void )
 {
 	// FIXMOD_CHANGE - Mehis
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	if ( !pPlayer ) return;
 
 	if ( !pPlayer->IsZM() ) return;
@@ -2749,7 +2748,7 @@ static ConVar zm_sv_gibdeleted("zm_sv_gibdeleted", "1", FCVAR_NONE, "If enabled,
 void ZM_CC_Delete_Zombies( void )
 {
 	// FIXMOD_CHANGE - Mehis
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	if ( !pPlayer ) return;
 
 	if ( !pPlayer->IsZM() ) return;
@@ -2800,7 +2799,7 @@ static ConCommand zm_delete_zombies("zm_deletezombies", ZM_CC_Delete_Zombies, "R
 //qck: Dismantle an ambush which has already been set up.
 void CC_ZM_Dismantle_Ambush( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 
 	if(!pPlayer || !pPlayer->IsZM())
 	{
@@ -2828,7 +2827,7 @@ static ConCommand zm_dismantle_ambush("zm_dismantle_ambush", CC_ZM_Dismantle_Amb
 //qck: Move an ambush point which has already been set. 
 void CC_ZM_Move_Ambush( void )
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();   
 
 	if (pPlayer->GetTeamNumber() != 3)
 	{
@@ -2926,7 +2925,7 @@ static ConCommand npc_create_loc("npc_create_loc", CC_NPC_Create_Loc, "Creates a
 void CC_Manipulate( void )
 {
 	// FIXMOD_CHANGE - Mehis
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	CBasePlayer *pPlayer = UTIL_GetCommandClient();
 	
 	// Was never null checked.
 	if ( !pPlayer ) return;
