@@ -1984,7 +1984,9 @@ void ZM_NPC_Target_Object( void )
 		{
 			DevMsg( "Setting breakable-swat schedule\n" );
 
-			pZombie->ZM_ForceSwat( pEntity, bBreak );
+			// Only force swat if they are a breakable without phys object.
+			// Eg. func_breakables
+			pZombie->ZM_ForceSwat( pEntity, (!bSwat && bBreak) );
 		}
 		else
 		{
