@@ -613,11 +613,17 @@ CNPC_BaseZombie* CZombieSpawn::SpawnZombie(const char* entname, Vector origin, Q
 	//check whether the zombie fits within the limit
 	//have to do this check here as well for non-traditional spawning like hidden spawns, as they use this function
 	CBasePlayer *pZM = CBasePlayer::GetZM();
-	if (!pZM || (pZM->m_iZombiePopCount + cost.population) > zm_zombiemax.GetInt())
+
+	// FIXMOD_CHANGE - Mehis
+	// Wasn't correctly null checked. (sending null to ClientPrint)
+	if ( !pZM ) return NULL;
+
+	if ( (pZM->m_iZombiePopCount + cost.population) > zm_zombiemax.GetInt() )
 	{
 		ClientPrint( pZM, HUD_PRINTCENTER, "Failed to spawn zombie: population limit reached!\n" );
 		return NULL;
 	}
+
 
 	// go ahead with spawn
 	CNPC_BaseZombie *pZombie = (CNPC_BaseZombie *)CreateEntityByName(entname);
