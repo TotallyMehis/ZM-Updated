@@ -1006,7 +1006,6 @@ void ZM_CreateSquad()
 	
 
 	// FIXMOD_CHANGE - Mehis
-	//if(gEntList.m_ZombieSelected.Count() < 1)
 	if(gEntList.m_ZombieSelected.Count() < 1)
 	{
 		ClientPrint( pPlayer, HUD_PRINTTALK, "No zombies selected!\n" );
@@ -1024,7 +1023,6 @@ void ZM_CreateSquad()
 	CZombieGroup* tempGroup;
 
 	// FIXMOD_CHANGE - Mehis
-	//for(int i=0; i < gEntList.m_ZombieSelected.Count(); i++)
 	for(int i=0; i < gEntList.m_ZombieSelected.Count(); i++)
 	{
 		CBaseEntity* pIterator = gEntList.m_ZombieSelected[i];
