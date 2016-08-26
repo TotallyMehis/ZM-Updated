@@ -2237,7 +2237,9 @@ void CC_ZombieMaster_Select_Index( void )
 		pPlayer->m_iLastSelected = entityIndex;
 		pPlayer->m_iLastZombieFlags = pZombieSpawn->m_iZombieFlags;
 
-		DevMsg("Server has Zflags as: %i\n");
+		// FIXMOD_CHANGE - Mehis
+		// No args passed here, lol.
+		DevMsg( "Settings player's zombie flags to %i\n", pPlayer->m_iLastZombieFlags );
 
 		pZombieSpawn->ShowBuildMenu(true);
 
@@ -2542,7 +2544,27 @@ void CC_Set_Rally_Point( void )
 	CZombieSpawn* pZombieSpawn = dynamic_cast<CZombieSpawn*>( UTIL_EntityByIndex( entityIndex ) );
 	if ( !pZombieSpawn ) return;
 
-	if ( !pZombieSpawn->rallyPoint ) return;
+
+	CZombieRallyPoint* pRally = pZombieSpawn->rallyPoint;
+
+	// Create rally point since one does not exist for this spawn...
+	if ( !pRally )
+	{
+		pRally = dynamic_cast<CZombieRallyPoint*>( CreateEntityByName( "info_rallypoint" ) );
+
+		// Failed.
+		if ( !pRally ) return;
+
+
+		pRally->SetOwnerEntity( pZombieSpawn );
+		pRally->Spawn();
+		pRally->SetSpawnParent( entityIndex );
+
+		pZombieSpawn->rallyPoint = pRally;
+
+
+		DevMsg( "Created new rallypoint for spawn!\n" );
+	}
 
 
 	Vector pos;
@@ -2551,8 +2573,8 @@ void CC_Set_Rally_Point( void )
 	pos.z = atof( engine->Cmd_Argv( 3 ) );
 
 	
-	pZombieSpawn->rallyPoint->SetCoordinates( pos );
-	pZombieSpawn->rallyPoint->ActivateRallyPoint();
+	pRally->SetCoordinates( pos );
+	pRally->ActivateRallyPoint();
 
 	//TGB: if we set a rally point, we had the spawn's menu open and it closed for this, so now reopen it
 	pZombieSpawn->ShowBuildMenu( true );

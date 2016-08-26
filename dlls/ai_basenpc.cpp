@@ -7262,36 +7262,26 @@ void CAI_BaseNPC::StartNPC( void )
 //-------------------------------
 void CAI_BaseNPC::SearchOutRallyPoint()
 {
-	CBaseEntity *pIterated = NULL;
-	CZombieRallyPoint *pZombieRallyPoint = NULL;
-	
-	//qck: Got rid of that compiler warning telling us about an assignment inside of a conditional. Was a potential crash point.
-	while ( (pIterated = gEntList.FindEntityByClassname( pIterated, "info_rallypoint") ) != NULL )
-	{	//LAWYER:  We could do this by doing a FindEntityByName and going through the list of NPCs, but that's unweildy.
-		pZombieRallyPoint = dynamic_cast< CZombieRallyPoint * >(pIterated); //Check if it's a commandable character
-		if (pZombieRallyPoint)
-		{
-			if(pZombieRallyPoint->IsActive() && (m_iOwner == pZombieRallyPoint->GetSpawnParent()))
-			{
-
-					//DevMsg("Our rally point is active!\n");
-					Vector forward;
-					Vector vecGoal = pZombieRallyPoint->GetCoordinates();
-
-					//TGB: made the zombie run at request of forumer, can be useful for fasties
-					ConqCommanded(vecGoal, forward, true, this);
-
-
-					m_bRallyPointSeek = false;
-
-			}
-			/*else
-				DevMsg("Found rallypoint that's not for me!\n");*/
-		}
-	}
+	// FIXMOD_CHANGE - Mehis
+	// Look up our spawner's rallypoint.
+	// No longer looping through all rallypoint ents.
 
 	//TGB: we want to avoid doing this every tick, so if we don't find a rallypoint on our first go, we stop searching
 	m_bRallyPointSeek = false;
+
+
+
+	CZombieSpawn* pSpawn = dynamic_cast<CZombieSpawn*>( GetOwnerEntity() );
+
+	if ( pSpawn && pSpawn->rallyPoint )
+	{
+		Vector forward;
+
+		Vector vecGoal = pSpawn->rallyPoint->GetCoordinates();
+
+
+		ConqCommanded( vecGoal, forward, true, this );
+	}
 }
 
 

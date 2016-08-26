@@ -425,6 +425,9 @@ CZombieSpawn::CZombieSpawn()
 	spawn_queue.EnsureCapacity(queue_size);
 
 	m_bShowingMenu = false;
+
+	// FIXMOD_CHANGE - Mehis
+	rallyPoint = NULL;
 }
 
 CZombieSpawn::~CZombieSpawn()
@@ -470,9 +473,11 @@ void CZombieSpawn::Spawn( void )
 	 //rallyPoint->SetSpawnParent( entindex() );
 
 	//TGB: see if we have a map-set rallypoint
-	CBaseEntity *pRallyEnt = gEntList.FindEntityByName( NULL, rallyName, this );
-	rallyPoint = dynamic_cast<CZombieRallyPoint *>(pRallyEnt);
-	if (pRallyEnt && rallyPoint)
+
+	// FIXMOD_CHANGE - Mehis
+	// Don't create a dummy rallypoint.
+	rallyPoint = dynamic_cast<CZombieRallyPoint *>(gEntList.FindEntityByName( NULL, rallyName, this ));
+	if ( rallyPoint )
 	{
 		DevMsg("ZSpawn: Map-set rally!\n");
 		rallyPoint->SetOwnerEntity(this);
@@ -483,10 +488,10 @@ void CZombieSpawn::Spawn( void )
 	{
 		DevMsg("ZSpawn: No map-set rally!\n");
 		//create a dummy
-		rallyPoint = dynamic_cast<CZombieRallyPoint *>(CreateEntityByName("info_rallypoint" ));
+		/*rallyPoint = dynamic_cast<CZombieRallyPoint *>(CreateEntityByName("info_rallypoint" ));
 		rallyPoint->SetOwnerEntity(this);
 		rallyPoint->Spawn();
-		rallyPoint->SetSpawnParent( entindex() );
+		rallyPoint->SetSpawnParent( entindex() );*/
 	}
 
 	//LAWYER:  Spawn nodes!  Shamelessly ripped off of TGB
@@ -1207,7 +1212,9 @@ void CZombieRallyPoint::ActivateRallyPoint()
 
 void CZombieRallyPoint::DeactivateRallyPoint()
 {
-	m_bActive = true;
+	// FIXMOD_CHANGE - Mehis
+	// This is useless, but was set to true, lol.
+	m_bActive = false;
 }
 
 
