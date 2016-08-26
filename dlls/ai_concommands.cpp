@@ -1292,16 +1292,19 @@ int ZM_ScreenTransform( const Vector& point, Vector& screen, VMatrix& worldToScr
 //cheat command for testing
 void CC_ZombieMaster_GiveResources (void)
 {
-	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );   //find a pointer to the player that the client controls
-	if (!pPlayer || (pPlayer && pPlayer->GetTeamNumber() != 3))
+	// FIXMOD_CHANGE - Mehis
+	CBasePlayer *pPlayer = ToBasePlayer( UTIL_GetCommandClient() );
+	if ( !pPlayer ) return;
+
+	// Msg to print.
+	if ( !pPlayer->IsZM() )
 	{
-		Msg("You're not ZM.\n");
+		ClientPrint( pPlayer, HUD_PRINTTALK, "You are not ZM!\n" );
 		return;
 	}
 
+
 	pPlayer->m_iZombiePool += atoi(engine->Cmd_Argv(1));
-
-
 }
 static ConCommand zm_zombiemaster_giveresources_cc("zm_giveresources", CC_ZombieMaster_GiveResources, "Cheat. Give ZM X amount of extra res.", FCVAR_CHEAT);
 
@@ -2762,7 +2765,8 @@ void ZM_CC_Delete_Zombies( void )
 
 	if(gEntList.m_ZombieSelected.Count() == 0)
 	{
-		Msg("No zombies selected! Cannot delete anything!\n");
+		// Msg to print.
+		ClientPrint( pPlayer, HUD_PRINTTALK, "No zombies selected! Cannot delete anything!\n" );
 		return;
 	}
 
