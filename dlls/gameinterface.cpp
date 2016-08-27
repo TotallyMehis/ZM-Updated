@@ -948,7 +948,15 @@ void CServerGameDLL::ServerActivate( edict_t *pEdictList, int edictCount, int cl
 
 #ifdef __DATE__
 #ifdef __TIME__
-	Msg("\nZombie Master build compiled on %s %s\n\n", __TIME__, __DATE__); //TGB: kinda neat
+	// FIXMOD_CHANGE - Mehis
+	// Tell the server what version we're running...
+	// It'd be neater to have this in a header file but adding new files will just be pain.
+#define FIXMOD_VER		"1.2.1 Updated v4"
+
+	Msg("\nZombie Master %s build compiled on %s %s\n\n", FIXMOD_VER, __TIME__, __DATE__); //TGB: kinda neat
+
+#undef FIXMOD_VER
+
 #endif
 #endif
 

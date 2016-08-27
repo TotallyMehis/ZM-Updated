@@ -1963,9 +1963,11 @@ void ZM_NPC_Target_Object( void )
 	{
 		IPhysicsObject* phys = pEntity->VPhysicsGetObject();
 	
-		bSwat = ( phys && phys->IsAsleep() && phys->IsMoveable() );
+		// I don't really see the point of not being able to swat objects that move.
+		//&& phys->IsAsleep()
+		bSwat = ( phys && phys->IsMoveable() );
 
-		bBreak = ( pEntity->GetHealth() > 0 );
+		bBreak = ( !bSwat && pEntity->GetHealth() > 0 );
 	}
 	else
 	{
@@ -1986,7 +1988,7 @@ void ZM_NPC_Target_Object( void )
 
 			// Only force swat if they are a breakable without phys object.
 			// Eg. func_breakables
-			pZombie->ZM_ForceSwat( pEntity, (!bSwat && bBreak) );
+			pZombie->ZM_ForceSwat( pEntity, bBreak );
 		}
 		else
 		{
