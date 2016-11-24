@@ -89,6 +89,9 @@ public:
 
 	CZombieRallyPoint();
 
+	// FIXMOD_CHANGE - Mehis
+	~CZombieRallyPoint();
+
 	void Spawn( void );
 	void Precache( void );
 	int GetSpawnParent();

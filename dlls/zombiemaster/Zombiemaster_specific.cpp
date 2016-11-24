@@ -1159,6 +1159,18 @@ CZombieRallyPoint::CZombieRallyPoint()
 	m_bActive = false;
 }
 
+// FIXMOD_CHANGE - Mehis
+CZombieRallyPoint::~CZombieRallyPoint()
+{
+	// Gonna be using the owner entity instead of "spawn parent" which should always be the same thing.
+	CZombieSpawn* pSpawn = dynamic_cast<CZombieSpawn*>( GetOwnerEntity() );
+
+	if ( pSpawn && pSpawn->rallyPoint == this )
+	{
+		pSpawn->rallyPoint = NULL;
+	}
+}
+
 void CZombieRallyPoint::Precache( void )
 {
     PrecacheModel( "models/rallypoint.mdl" );

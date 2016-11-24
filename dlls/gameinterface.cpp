@@ -951,7 +951,7 @@ void CServerGameDLL::ServerActivate( edict_t *pEdictList, int edictCount, int cl
 	// FIXMOD_CHANGE - Mehis
 	// Tell the server what version we're running...
 	// It'd be neater to have this in a header file but adding new files will just be pain.
-#define FIXMOD_VER		"1.2.1 Updated v4"
+#define FIXMOD_VER		"1.2.1 Updated v5"
 
 	Msg("\nZombie Master %s build compiled on %s %s\n\n", FIXMOD_VER, __TIME__, __DATE__); //TGB: kinda neat
 
