@@ -355,15 +355,19 @@ void CNPC_BaseZombie::FreeSelector()
 {
 	m_bConqSelected = false;
 
-	if ( m_pConqSelector )
+	
+	// Without changing how m_pConqSelector works, we really have no clue whether it is a valid pointer or not.
+	// Other parts of the code m_pConqSelector is merely used for conditions and its methods are never accessed.
+	// This hack will atleast make sure we don't crash.
+	if ( m_pConqSelector != NULL && m_pConqSelector == CBasePlayer::GetZM() )
 	{
 		if ( m_pConqSelector->m_iZombieSelected > 0 )
 		{
 			m_pConqSelector->m_iZombieSelected--;
 		}
-
-		m_pConqSelector = NULL;
 	}
+	
+	m_pConqSelector = NULL;
 }
 
 
